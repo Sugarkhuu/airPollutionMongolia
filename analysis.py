@@ -51,166 +51,92 @@ def time_series_graph(df, key='counts'):
     plt.xticks(rotation=90)
     plt.show()
     
+def get_norm(df, variable):
+    var_mean = df[[variable]].mean().values
+    var_std  = df[[variable]].std().values
+    df[variable + '_norm'] = (df[variable]-var_mean)/var_std
+    return df
+
+pm_train = get_norm(pm_train, 'aqi')
+weather  = get_norm(weather, 'temperature')
+temperature = weather[['date','temperature_norm']]
+pm_train = pm_train.merge(temperature, on='date',how='left')
+pm_test  = pm_test.merge(temperature, on='date',how='left')
+
+aqi_mean = pm_train['aqi'].mean()
+aqi_std  = pm_train['aqi'].std()
 
 
-time_series_graph(train_count)
-    
-# Тестийн датаны хувьд датаны мөрийн тоо (сараар)
-time_series_graph(test_count)
-
-# Цаг агаарын датаны хувьд датаны мөрийн тоо (сараар)
-time_series_graph(weather_count)
-
-
-len(train_count)
-print(len(pm_test[~pm_test["aqi"].isnull()]))
 
 stations = pm_train.station.unique().tolist()
 types    = pm_train.type.unique().tolist()
 
-pm_train_short = pm_train[['date','station','type','aqi']]
-station_id = 5
-pm_0 = pm_train_short[pm_train_short.station == stations[station_id]].groupby(['date','type']).sum().unstack()
-pm_0.columns = ['PM10','PM2.5'] if len(pm_0.columns)==2 else ['PM10']
-pm_0 = pm_0.merge(temperature, on='date',how='left')
-pm_0.drop(columns=['date'], axis=1).plot()
-pm_0.drop(columns=['date'], axis=1).plot(x='temperature',y=types[0],kind='scatter')
 
-# PM2.5 more sensitive to temperature
-pm_0.drop(columns=['date'], axis=1).plot(x='temperature',y=types[1],kind='scatter')
+from sklearn.preprocessing import PolynomialFeatures
+poly_reg = PolynomialFeatures(degree=2)
+from sklearn.linear_model import LinearRegression
+lin_reg = LinearRegression()
 
+# PM10
+Y =  pm_train[['aqi_norm']][pm_train['type'] == types[0]]
+X =  pm_train[['temperature_norm']][pm_train['type'] == types[0]]
+X = X.fillna(0)
+Y = Y.fillna(0)
+X_poly = poly_reg.fit_transform(X)
+pol_reg = LinearRegression()
+pol_reg.fit(X_poly, Y)
 
-# relationship may be different in different month and time of day, weekday 
-
-pm_test_short = pm_test[['date','station','type','aqi']]
-station_id = 10
-pm_0 = pm_test_short[pm_test_short.station == stations[station_id]].groupby(['date','type']).sum().unstack()
-pm_0.columns = ['PM10','PM2.5'] if len(pm_0.columns)==2 else ['PM10']
-pm_0.plot()
-
-
-weather = weather.drop_duplicates(subset=['date'])
-weather[['date','temperature']].set_index('date').plot()
-temperature = weather[['date','temperature']]
-
-pm_train_short = pm_train_short.merge(temperature, on='date',how='left')
+# PM2.5
+Y_ =  pm_train[['aqi_norm']][pm_train['type'] == types[1]]
+X_ =  pm_train[['temperature_norm']][pm_train['type'] == types[1]]
+X_ = X_.fillna(0)
+Y_ = Y_.fillna(0)
+X_poly_ = poly_reg.fit_transform(X_)
+pol_reg_ = LinearRegression()
+pol_reg_.fit(X_poly_, Y_)
 
 
+#predict
+X_10 = pm_test[['temperature_norm']][pm_train['type'] == types[0]]
+X_025 = pm_test[['temperature_norm']][pm_train['type'] == types[1]]
+X_10 = X_10.fillna(0)
+X_025 = X_025.fillna(0)
+
+Y_10 = pol_reg.predict(poly_reg.fit_transform(X_10))
+Y_025 = pol_reg_.predict(poly_reg.fit_transform(X_025))
+
+Y_10_n  = aqi_mean + aqi_std*Y_10
+Y_025_n = aqi_mean + aqi_std*Y_025
+
+import matplotlib.pyplot as plt
+plt.plot(Y_10_n)
+plt.plot(Y_025_n)
+
+insert_10 = X_10.copy()
+insert_025 = X_025.copy()
+insert_10['Y'] = Y_10_n
+insert_025['Y'] = Y_025_n 
+
+insert_10 = insert_10.reset_index()
+insert_10['aqi'] = insert_10['Y']
+insert_025 = insert_025.reset_index()
+insert_025['aqi'] = insert_025['Y']
+pm_test = pm_test.reset_index()
 
 
-# Хотод байгаа бүх станцын дунджаар дата бэлдэх.
-def get_records(df):
-    data = df[['date' , 'type', 'aqi']]
-    data = data.fillna(0)
-    pv = pd.pivot_table(data, values='aqi', index=['date'], columns=['type'], aggfunc=np.mean)
-    records = pd.DataFrame(pv.to_records())
-    return records
+pm_test = pm_test.merge(insert_10,on='index',how='left')
+pm_test = pm_test.merge(insert_025,on='index',how='left')
+pm_test['aqi_proj'] = pm_test['aqi_y'].fillna(0) + pm_test['aqi'].fillna(0)
 
-train_records = get_records(pm_train)
-test_records = get_records(pm_test)
-test_records.info()
+def fill_aqi(df):
+   if df['aqi_x'] == np.nan:
+       df['aqi_x'] = df['aqi_proj']
+   else:
+       df['aqi_x'] = df['aqi_x']
+   return df
 
+pm_test = pm_test.apply(fill_aqi,axis=1)
 
-temp = weather[['date', 'temperature']]
-temp = temp.set_index('date')
-temp.plot(figsize=(15,8), rot=90)
-
-# Зарим цагуудын дата дутуу тул дутуу цагийн мөрийг оруулж ирэх
-def fill_date(df):
-    ranges = pd.date_range(df['date'].min(),df['date'].max(), freq='H')
-    filled = pd.DataFrame(ranges, columns= ['date']).merge(df, on=['date'], how='left')
-    return filled
-
-train_records_filled = fill_date( train_records)
-test_records_filled = fill_date( test_records)
-
-train = pd.merge(train_records_filled, temp, on=['date'], how='left')
-test = pd.merge(test_records_filled, temp, on=['date'], how='left')
-
-train[train['PM10'].isna()]
-
-train_inter = train.interpolate()
-test_inter = test.interpolate()
-print(train_inter[train_inter['PM10'].isna()])
-train_inter.head()
-
-print(test_inter[test_inter['PM10'].isna()])
-
-
-#Хэд дэх сар, өдөр мөн цаг маань тоосонцрын хэмжээнд нөлөөлдөг байх боломжтой гэж үзээд date features бэлдэх
-def set_date_features(df):
-    df['month'] = pd.DatetimeIndex( df['date']).month
-    df['dayofweek'] = pd.DatetimeIndex( df['date']).dayofweek
-    df['hour'] = pd.DatetimeIndex( df['date']).hour
-    return df
-
-train_data = set_date_features(train_inter)
-test_data = set_date_features(test_inter)
-
-columns = ['date','PM10', 'PM2.5' , 'temperature','month','dayofweek','hour']
-train = train_data[columns]
-test = test_data[columns]
-
-
-# onehot encoding
-def encoding(df):
-    df = df.drop(['date'], axis = 1) 
-    df = pd.get_dummies(df, columns=['month'], prefix='month')
-    df = pd.get_dummies(df, columns=['hour'], prefix='hour')
-    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek')
-    return df
-
-
-train_encoded = encoding(train)
-test_encoded = encoding(test)
-# 2 years data
-n_train_hours = int( 365 * 24 * 2 )
-
-train_data = train_encoded.values[:n_train_hours, :]
-valid_data = train_encoded.values[n_train_hours:, :]
-test_data = test_encoded.values
-
-train_X, train_y = train_data[:, 2:], train_data[:, 0:2]
-valid_X, valid_y = valid_data[:, 2:], valid_data[:, 0:2]
-test_X, test_y = test_data[:, 2:], test_data[:, 0:2]
-
-dates = test['date'].values
-
-
-### Энгийн linear model турших¶
-
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-
-
-model = RandomForestRegressor(n_estimators=100,
-                              max_depth=3,
-                              random_state=10)
-model.fit(train_X, train_y) 
-y_hat= model.predict(valid_X)
-
-print('MSE On validation Data: {}'.format( np.sqrt(mean_squared_error(valid_y,y_hat))))
-
-y_hat= model.predict(test_X)
-
-dates = dates.reshape(len(dates),1)
-
-sub = np.concatenate((dates.astype(str), y_hat.astype(str)),axis=1)
-tmp = pd.DataFrame(sub, columns=['date', 'PM10','PM2.5'])
-
-tmp['date']= pd.to_datetime(tmp['date'])
-pm25 = pm_test[pm_test['type']=='PM2.5']
-pm10 = pm_test[pm_test['type']=='PM10']
-
-sub_pm25 = pd.merge(pm25, tmp, on=['date'], how='left')
-sub_pm10 = pd.merge(pm10, tmp, on=['date'], how='left')
-
-submission = pd.DataFrame(columns=['ID', 'aqi'])
-submission = submission.append(sub_pm25[['ID', 'PM2.5']].rename(columns={'PM2.5': 'aqi'}))
-submission = submission.append(sub_pm10[['ID', 'PM10']].rename(columns={'PM10': 'aqi'}))
-
-
-
-
-
-
+submission = pm_test[['ID','aqi_proj']]
+submission.columns = ['ID','aqi']
+submission.to_csv('submission.csv',index=False)

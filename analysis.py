@@ -83,41 +83,18 @@ def process_data(df, df_weather,worktype,temp_var):
     lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']
     
     for var in lagvars:
+        
         for i in range(25):
             if i !=0:
-                df['winter' + temp_var + '_' + str(i)] = df['winter']*df[temp_var + '_' + str(i)]
+                df['winter' + var + '_' + str(i)] = df['winter']*df[var + '_' + str(i)]
+                if var == 'humidity':   
+                    df['summer' + var + '_' + str(i)] = df['summer']*df[var + '_' + str(i)]
             else:
-                df['winter' + temp_var] = df['winter']*df[temp_var]
-        
-#    df['winter_temp'] = df['winter']*df[temp_var]
-#    df['winter_uv'] = df['winter']*df['uvIndex']
-#    df['winter_vis'] = df['winter']*df['visibility']
-#    df['winter_windSpeed'] = df['winter']*df['windSpeed']
-#    df['winter_windBearing'] = df['winter']*df['windBearing']
-#    
-#    df['winter_temp_1'] = df['winter']*df[temp_var+ '_1']
-#    df['winter_uv_1'] = df['winter']*df['uvIndex_1']
-#    df['winter_vi_s_1'] = df['winter']*df['visibility_1']
-#    df['winter_windSpeed_1'] = df['winter']*df['windSpeed_1']
-#    df['winter_windBearing_1'] = df['winter']*df['windBearing_1']
-#    
-#    df['winter_temp_2'] = df['winter']*df[temp_var+ '_2']
-#    df['winter_uv_2'] = df['winter']*df['uvIndex_2']
-#    df['winter_vis_2'] = df['winter']*df['visibility_2']
-#    df['winter_windSpeed_2'] = df['winter']*df['windSpeed_2']
-#    df['winter_windBearing_2'] = df['winter']*df['windBearing_2']
-#    
-#    df['winter_temp_3'] = df['winter']*df[temp_var+ '_3']
-#    df['winter_uv_3'] = df['winter']*df['uvIndex_3']
-#    df['winter_vis_3'] = df['winter']*df['visibility_3']
-#    df['winter_windSpeed_3'] = df['winter']*df['windSpeed_3']
-#    df['winter_windBearing_3'] = df['winter']*df['windBearing_3']
-                
-#    df['winter_humidity'] = df['winter']*df['humidity']
-#    df['winter_humidity_1'] = df['winter']*df['humidity_1']
-#    df['winter_humidity_2'] = df['winter']*df['humidity_2']
-#    df['winter_humidity_3'] = df['winter']*df['humidity_3']
-    
+                df['winter' + var] = df['winter']*df[var]
+                if var == 'humidity':   
+                    df['summer' + var] = df['summer']*df[var]
+            
+            
     df['winter_Sunday'] = df['winter']*df['dayofweek_1']
     df['winter_Saturday'] = df['winter']*df['dayofweek_6']  
 
@@ -129,11 +106,13 @@ def process_data(df, df_weather,worktype,temp_var):
     df['winter_daytemp_1'] = df['winter']*df['temp_1']
     df['winter_daytemp_2'] = df['winter']*df['temp_2']
     
+    df['summer_dayHumidity'] = df['summer']*df['dayHumidity']
+    
     #pm_train = encoding(pm_train)
     df=df.interpolate()
     df=df.interpolate(method='backfill')
     
-    df.loc[df['aqi']<1,'aqi'] = 1
+    df.loc[df['aqi']<10,'aqi'] = 10 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
     df['l_aqi'] = np.log(df['aqi'])
     
     df = df[df['type']==worktype]
@@ -275,12 +254,12 @@ submission = pm_test[['ID','aqi']].copy()
 assert submission['aqi'].isnull().sum() == 0
 submission.to_csv('submission.csv',index=False)
 
-old = pd.read_csv('submission71178.csv')
+old = pd.read_csv('submission676.csv')
 plt.scatter(old['aqi'],submission['aqi'])
 old['aqi'].hist(bins=100)
 plt.figure()
 submission['aqi'].hist(bins=100)
-
+print(np.sqrt(mean_squared_error(submission['aqi'],old['aqi'])))
 
 #modelRF = RandomForestRegressor(n_estimators=1000,
 #                              max_depth=10,

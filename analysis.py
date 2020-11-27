@@ -9,14 +9,74 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
-#s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
-os.chdir(s_dir)
-
-
-pm_train = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_train.csv')
-pm_test = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_test.csv')
-weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
+def process_data(df, df_weather,worktype):
+    wstart = 11
+    wend   = 2
+    df['winter']=0
+    df.loc[~((df['month']>=wend+1)&(df['month']<=wstart-1)),'winter'] = 1    
+    df = encoding(df)
+    
+    df['winter_h9']  = df['winter']*df['hour_9']
+    df['winter_h10'] = df['winter']*df['hour_10']
+    df['winter_h11'] = df['winter']*df['hour_11']
+    df['winter_h12'] = df['winter']*df['hour_12']
+    df['winter_h13'] = df['winter']*df['hour_13']
+    df['winter_h14'] = df['winter']*df['hour_14']
+    df['winter_h15'] = df['winter']*df['hour_15']
+    df['winter_h16'] = df['winter']*df['hour_16']
+    
+    df['winter_h19'] = df['winter']*df['hour_19']
+    df['winter_h20'] = df['winter']*df['hour_20']
+    df['winter_h21'] = df['winter']*df['hour_21']
+    df['winter_h22'] = df['winter']*df['hour_22']
+    df['winter_h23'] = df['winter']*df['hour_23']
+    df['winter_h1'] = df['winter']*df['hour_1']
+    df['winter_h2'] = df['winter']*df['hour_2']
+    df['winter_h3'] = df['winter']*df['hour_3']
+    df['winter_h4'] = df['winter']*df['hour_4']
+        
+    df = df.merge(df_weather,on='date',how='left')
+    
+    df['winter_temp'] = df['winter']*df['apparentTemperature']
+    df['winter_uv'] = df['winter']*df['uvIndex']
+    df['winter_vis'] = df['winter']*df['visibility']
+    df['winter_windSpeed'] = df['winter']*df['windSpeed']
+    df['winter_windBearing'] = df['winter']*df['windBearing']
+    
+    df['winter_temp_1'] = df['winter']*df['apparentTemperature_1']
+    df['winter_uv_1'] = df['winter']*df['uvIndex_1']
+    df['winter_vi_s_1'] = df['winter']*df['visibility_1']
+    df['winter_windSpeed_1'] = df['winter']*df['windSpeed_1']
+    df['winter_windBearing_1'] = df['winter']*df['windBearing_1']
+    
+    df['winter_temp_2'] = df['winter']*df['apparentTemperature_2']
+    df['winter_uv_2'] = df['winter']*df['uvIndex_2']
+    df['winter_vis_2'] = df['winter']*df['visibility_2']
+    df['winter_windSpeed_2'] = df['winter']*df['windSpeed_2']
+    df['winter_windBearing_2'] = df['winter']*df['windBearing_2']
+    
+    df['winter_temp_3'] = df['winter']*df['apparentTemperature_3']
+    df['winter_uv_3_3'] = df['winter']*df['uvIndex_3']
+    df['winter_vis_3'] = df['winter']*df['visibility_3']
+    df['winter_windSpeed_3'] = df['winter']*df['windSpeed_3']
+    df['winter_windBearing_3'] = df['winter']*df['windBearing_3']
+    
+    df['winter_Sunday'] = df['winter']*df['dayofweek_1']
+    df['winter_Saturday'] = df['winter']*df['dayofweek_6']  
+    
+    #pm_train = encoding(pm_train)
+    df=df.interpolate()
+    df=df.interpolate(method='backfill')
+    
+    df.loc[df['aqi']<1,'aqi'] = 1
+    df['l_aqi'] = np.log(df['aqi'])
+    
+    df = df[df['type']==worktype]
+    y_train = df.loc[:,'l_aqi']
+    X_train = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
+    X_train = X_train.drop(['winter','type'],axis=1)
+    
+    return y_train, X_train
 
 def encoding(df):
     df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
@@ -28,203 +88,130 @@ def encoding(df):
     return df
 
 
-weather['date'] = pd.to_datetime(weather['date'])
-weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
-#weather['year'] = pd.DatetimeIndex(weather['date']).year
-#weather['month'] = pd.DatetimeIndex(weather['date']).month
-#weather['hour'] = pd.DatetimeIndex(weather['date']).hour
-#weather['dayofweek'] = pd.DatetimeIndex(weather['date']).dayofweek
-#weather['dayofmonth'] = pd.DatetimeIndex(weather['date']).day
-weather = weather.drop(['Unnamed: 0','summary', 'icon'],axis=1)
-weather = weather.interpolate()
+def initial_process(df):
+    df['date'] = pd.to_datetime(df['date'])
+    df['day'] = df['date'].dt.strftime('%Y-%m-%d')
+    df['year'] = pd.DatetimeIndex(df['date']).year
+    df['month'] = pd.DatetimeIndex(df['date']).month
+    df['hour'] = pd.DatetimeIndex(df['date']).hour
+    df['dayofweek'] = pd.DatetimeIndex(df['date']).dayofweek
+    df['dayofmonth'] = pd.DatetimeIndex(df['date']).day
+    return df
 
-pm_train['date'] = pd.to_datetime(pm_train['date'])
-pm_train['day'] = pm_train['date'].dt.strftime('%Y-%m-%d')
-pm_train['year'] = pd.DatetimeIndex(pm_train['date']).year
-pm_train['month'] = pd.DatetimeIndex(pm_train['date']).month
-pm_train['hour'] = pd.DatetimeIndex(pm_train['date']).hour
-pm_train['dayofweek'] = pd.DatetimeIndex(pm_train['date']).dayofweek
-pm_train['dayofmonth'] = pd.DatetimeIndex(pm_train['date']).day
+def process_weather(weather):
+    weather['date'] = pd.to_datetime(weather['date'])
+    weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
+    weather = weather.drop(['Unnamed: 0','summary', 'icon'],axis=1)
+    weather = weather.interpolate()
+    weather = weather.sort_values(by='date')
+    
+    whelp =pd.DataFrame()
+    whelp['temp'] = weather.groupby(weather['day'])['apparentTemperature'].mean()
+    whelp['temp_1'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift()
+    whelp['temp_2'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift(2)
+    whelp['dayHumidity'] = weather.groupby(weather['day'])['humidity'].mean()
+    whelp['dayuvIndex'] = weather.groupby(weather['day'])['uvIndex'].mean()
+    whelp['daywindSpeed'] = weather.groupby(weather['day'])['windSpeed'].mean()
+    weather = weather.merge(whelp,on='day',how='left')
+    weather = weather.interpolate(method='backfill')
+    #weather['dayAvgTemp'] = weather['apparentTemperature'].groupby(weather['day']).transform('mean').shift()
+    #weather['dayAvgUV'] = weather['uvIndex'].groupby(weather['day']).transform('mean')
+    #weather['dayStdUV'] = weather['uvIndex'].groupby(weather['day']).transform('std')
+    weather = weather.drop(['day','temperature','dewPoint','precipProbability','precipIntensity'],axis=1)
+    #weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
+    #weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
+    
+    lagvars = ['apparentTemperature','windSpeed','windBearing','humidity','uvIndex','visibility']
+    
+    for i in range(1,10):
+        for var in lagvars:
+            weather[var+'_'+str(i)] = weather[var].diff(i)
 
-pm_test['date'] = pd.to_datetime(pm_test['date'])
-pm_test['day'] = pm_test['date'].dt.strftime('%Y-%m-%d')
-pm_test['year'] = pd.DatetimeIndex(pm_test['date']).year
-pm_test['month'] = pd.DatetimeIndex(pm_test['date']).month
-pm_test['hour'] = pd.DatetimeIndex(pm_test['date']).hour
-pm_test['dayofweek'] = pd.DatetimeIndex(pm_test['date']).dayofweek
-pm_test['dayofmonth'] = pd.DatetimeIndex(pm_test['date']).day
+    return weather
+
+
+def test_add_prep(df_test,df_train):
+    missing_cols = np.setdiff1d(df_train.columns, df_test.columns)
+    df_test = pd.concat([df_test,pd.DataFrame(columns=missing_cols)])
+    df_test[missing_cols] = 0
+    df_test = df_test[df_train.columns]
+    df_test = df_test.interpolate()
+    return df_test
+
+def my_estimate(X,Y):
+    model = LinearRegression()
+    model.fit(X, Y)
+#    for i in range(len(X.columns)):
+#        print(X.columns[i],model.coef_[i])
+    return model
+    
+
+s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
+#s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
+os.chdir(s_dir)
+
+
+pm_train = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_train.csv')
+pm_test = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_test.csv')
+weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 
 stations = pm_train.station.unique()
 types    = pm_train.type.unique()
-
 worktype = types[0]
 
-# day (10-14), night(20-06) betweenHours 7-9,15-20, 
-# winter(11-3), summer(4-10)
-# apparentTemperature, apparentTemperature lags
-#windSpeed
-#windBearing
-#visibilty
-#station
-#type
-
-weather = weather.sort_values(by='date')
-
-whelp =pd.DataFrame()
-whelp['temp'] = weather.groupby(weather['day'])['apparentTemperature'].mean()
-whelp['temp_1'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift()
-whelp['temp_2'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift(2)
-weather = weather.merge(whelp,on='day',how='left')
-weather = weather.interpolate(method='backfill')
-#weather['dayAvgTemp'] = weather['apparentTemperature'].groupby(weather['day']).transform('mean').shift()
-#weather['dayAvgUV'] = weather['uvIndex'].groupby(weather['day']).transform('mean')
-#weather['dayStdUV'] = weather['uvIndex'].groupby(weather['day']).transform('std')
-weather = weather.drop(['day','temperature','dewPoint','precipProbability','precipIntensity'],axis=1)
-#weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
-#weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
-
-lagvars = ['apparentTemperature','windSpeed','windBearing','humidity','uvIndex','visibility']
-
-for i in range(1,10):
-    for var in lagvars:
-        weather[var+'_'+str(i)] = weather[var].diff(i)
+pm_train = initial_process(pm_train)
+pm_test  = initial_process(pm_test)
+weather  = process_weather(weather)
 
 
-
-
-wstart = 11
-wend   = 2
-pm_train['winter']=0
-pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1
-
-#dstart = 10
-#dend   = 15
-#pm_train['dayhours']=0
-#pm_train.loc[((pm_train['hour']>=dstart)&(pm_train['hour']<=dend)),'dayhours'] = 1
-#
-#nstart = 20
-#nend   = 5
-#pm_train['nighthours']=0
-#pm_train.loc[~((pm_train['hour']>=nend+1)&(pm_train['hour']<=nstart-1)),'nighthours'] = 1
-
-#winter dayhours
-#winter nighthours
-
-pm_train = encoding(pm_train)
-
-
-pm_train['winter_h9']  = pm_train['winter']*pm_train['hour_9']
-pm_train['winter_h10'] = pm_train['winter']*pm_train['hour_10']
-pm_train['winter_h11'] = pm_train['winter']*pm_train['hour_11']
-pm_train['winter_h12'] = pm_train['winter']*pm_train['hour_12']
-pm_train['winter_h13'] = pm_train['winter']*pm_train['hour_13']
-pm_train['winter_h14'] = pm_train['winter']*pm_train['hour_14']
-pm_train['winter_h15'] = pm_train['winter']*pm_train['hour_15']
-pm_train['winter_h16'] = pm_train['winter']*pm_train['hour_16']
-
-pm_train['winter_h19'] = pm_train['winter']*pm_train['hour_19']
-pm_train['winter_h20'] = pm_train['winter']*pm_train['hour_20']
-pm_train['winter_h21'] = pm_train['winter']*pm_train['hour_21']
-pm_train['winter_h22'] = pm_train['winter']*pm_train['hour_22']
-pm_train['winter_h23'] = pm_train['winter']*pm_train['hour_23']
-pm_train['winter_h1'] = pm_train['winter']*pm_train['hour_1']
-pm_train['winter_h2'] = pm_train['winter']*pm_train['hour_2']
-pm_train['winter_h3'] = pm_train['winter']*pm_train['hour_3']
-pm_train['winter_h4'] = pm_train['winter']*pm_train['hour_4']
-
-#pm_train['winter_dayhours'] = pm_train['winter']*pm_train['dayhours']
-#pm_train['winter_nighthours'] = pm_train['winter']*pm_train['nighthours']
+for worktype in types:
+    #estimation step
+    y_train, X_train = process_data(pm_train, weather,worktype)
+    
+    X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
+    y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
+    X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
+    y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
+        
+    my_model = my_estimate(X_train_train,y_train_train)
+    y_hat= np.exp(my_model.predict(X_train_train))
+    
+    #training set
+    print("On training set:")
+    #print('Log-lin MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
+    print(np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat)))
+    
+    #validation set
+    print("On validation set:")
+    y_hat_valid= np.exp(my_model.predict(X_train_valid))
+    print(np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid)))
+        
+    print("On total set:")
+    my_model = my_estimate(X_train,y_train)
+    y_hat_tot= np.exp(my_model.predict(X_train))
+    print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
+        
+    # prediction step
+    y_test, X_test = process_data(pm_test, weather,worktype)
+    X_test         = test_add_prep(X_test,X_train)
+    
+    y_test_hat = np.exp(my_model.predict(X_test))
+    pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat
 
 
 
-#weather = weather.drop(['day', 'year', 'month', 'hour', 'dayofweek', 'dayofmonth'],axis=1)
+# post-process
+pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull(),'y_test'] 
 
-pm_train = pm_train.merge(weather,on='date',how='left')
+submission = pm_test[['ID','aqi']].copy()
+assert submission['aqi'].isnull().sum() == 0
+submission.to_csv('submission.csv',index=False)
 
-pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
-pm_train['winter_uv'] = pm_train['winter']*pm_train['uvIndex']
-pm_train['winter_vis'] = pm_train['winter']*pm_train['visibility']
-pm_train['winter_windSpeed'] = pm_train['winter']*pm_train['windSpeed']
-pm_train['winter_windBearing'] = pm_train['winter']*pm_train['windBearing']
-
-pm_train['winter_temp_1'] = pm_train['winter']*pm_train['apparentTemperature_1']
-pm_train['winter_uv_1'] = pm_train['winter']*pm_train['uvIndex_1']
-pm_train['winter_vi_s_1'] = pm_train['winter']*pm_train['visibility_1']
-pm_train['winter_windSpeed_1'] = pm_train['winter']*pm_train['windSpeed_1']
-pm_train['winter_windBearing_1'] = pm_train['winter']*pm_train['windBearing_1']
-
-pm_train['winter_temp_2'] = pm_train['winter']*pm_train['apparentTemperature_2']
-pm_train['winter_uv_2'] = pm_train['winter']*pm_train['uvIndex_2']
-pm_train['winter_vis_2'] = pm_train['winter']*pm_train['visibility_2']
-pm_train['winter_windSpeed_2'] = pm_train['winter']*pm_train['windSpeed_2']
-pm_train['winter_windBearing_2'] = pm_train['winter']*pm_train['windBearing_2']
-
-pm_train['winter_temp_3'] = pm_train['winter']*pm_train['apparentTemperature_3']
-pm_train['winter_uv_3_3'] = pm_train['winter']*pm_train['uvIndex_3']
-pm_train['winter_vis_3'] = pm_train['winter']*pm_train['visibility_3']
-pm_train['winter_windSpeed_3'] = pm_train['winter']*pm_train['windSpeed_3']
-pm_train['winter_windBearing_3'] = pm_train['winter']*pm_train['windBearing_3']
-
-pm_train['winter_Sunday'] = pm_train['winter']*pm_train['dayofweek_1']
-pm_train['winter_Saturday'] = pm_train['winter']*pm_train['dayofweek_6']
-
-
-#pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
-#pm_train = pm_train.interpolate(method='backfill')
-#pm_train.fillna(pm_train.mean())
-
-#var_list = ['month','station','type','hour','dayofweek',
-#            'precipIntensity','precipProbability', 'temperature', 'apparentTemperature', 'dewPoint',
-#            'humidity', 'windSpeed', 'windBearing', 'cloudCover', 'uvIndex',
-#            'visibility']
-#
-#pm_back_X = pm_back[var_list]
-#pm_test_X = pm_test[var_list]
-
-
-#pm_train = encoding(pm_train)
-pm_train=pm_train.interpolate()
-pm_train=pm_train.interpolate(method='backfill')
-
-
-pm_train.loc[pm_train['aqi']<1,'aqi'] = 1
-pm_train['l_aqi'] = np.log(pm_train['aqi'])
-
-pm_train = pm_train[pm_train['type']==worktype]
-y_train = pm_train.loc[:,'l_aqi']
-X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
-X_train = X_train.drop(['winter','type'],axis=1)
-
-#X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station','dayofweek'],axis=1)
-#'dayhours','nighthours',
-#X_train = X_train.drop(['month','hour','type'],axis=1)
-#X_train = X_train.drop(['type', 'source', 'station','year', 'month', 'hour', 'dayofweek'],axis=1)
-
-
-X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
-y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
-X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
-y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
-
-model = LinearRegression()
-model.fit(X_train_train, y_train_train) 
-y_hat= np.exp(model.predict(X_train_train))
-
-
-for i in range(len(X_train.columns)):
-    print(X_train.columns[i])
-    print(model.coef_[i])
-
-#training set
-print("On training set:")
-#print('Log-lin MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
-print(np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat)))
-
-#validation set
-
-print("On validation set:")
-y_hat_valid= np.exp(model.predict(X_train_valid))
-print(np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid)))
+old = pd.read_csv('submission71178.csv')
+plt.scatter(old['aqi'],submission['aqi'])
+old['aqi'].hist(bins=100)
+plt.figure()
+submission['aqi'].hist(bins=100)
 
 
 #modelRF = RandomForestRegressor(n_estimators=1000,
@@ -255,12 +242,12 @@ pm_train['dayofweek'] = pd.DatetimeIndex(pm_train['date']).dayofweek
 pm_train['dayofmonth'] = pd.DatetimeIndex(pm_train['date']).day
 
 pm_train = pm_train[pm_train['type']==worktype]
-pm_train['y_hat'] = y_hat
+pm_train['y_hat'] = np.exp(my_model.predict(X_train))
 
-month = 1
-day = 15;15;14
-year = 2017
-station = 9;8;11;8;1;6
+month = 7
+day = 25;15;14
+year = 2018
+station = 1;9;8;11;8;1;6
 ntype = 0
 
 pm_train['month'] = pd.DatetimeIndex(pm_train['date']).month

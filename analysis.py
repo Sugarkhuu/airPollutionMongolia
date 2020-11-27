@@ -6,10 +6,11 @@ import os
 
 from mpl_toolkits import mplot3d
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-#s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
-s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
+s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
+#s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
 os.chdir(s_dir)
 
 
@@ -20,10 +21,10 @@ weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 def encoding(df):
     df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
     df = pd.get_dummies(df, columns=['hour'], prefix='hour', drop_first=True)
-#    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek', drop_first=True)
-#    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
+    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek', drop_first=True)
+    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
 #    df = pd.get_dummies(df, columns=['type'], prefix='type', drop_first=True)
-    df = pd.get_dummies(df, columns=['source'], prefix='source', drop_first=True)
+#    df = pd.get_dummies(df, columns=['source'], prefix='source', drop_first=True)
     return df
 
 
@@ -82,9 +83,9 @@ weather = weather.drop(['day','temperature','dewPoint','precipProbability','prec
 #weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
 #weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
 
-lagvars = ['apparentTemperature','windSpeed','windBearing','humidity']
+lagvars = ['apparentTemperature','windSpeed','windBearing','humidity','uvIndex','visibility']
 
-for i in range(1,3):
+for i in range(1,10):
     for var in lagvars:
         weather[var+'_'+str(i)] = weather[var].diff(i)
 
@@ -139,6 +140,35 @@ pm_train['winter_h4'] = pm_train['winter']*pm_train['hour_4']
 #weather = weather.drop(['day', 'year', 'month', 'hour', 'dayofweek', 'dayofmonth'],axis=1)
 
 pm_train = pm_train.merge(weather,on='date',how='left')
+
+pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
+pm_train['winter_uv'] = pm_train['winter']*pm_train['uvIndex']
+pm_train['winter_vis'] = pm_train['winter']*pm_train['visibility']
+pm_train['winter_windSpeed'] = pm_train['winter']*pm_train['windSpeed']
+pm_train['winter_windBearing'] = pm_train['winter']*pm_train['windBearing']
+
+pm_train['winter_temp_1'] = pm_train['winter']*pm_train['apparentTemperature_1']
+pm_train['winter_uv_1'] = pm_train['winter']*pm_train['uvIndex_1']
+pm_train['winter_vi_s_1'] = pm_train['winter']*pm_train['visibility_1']
+pm_train['winter_windSpeed_1'] = pm_train['winter']*pm_train['windSpeed_1']
+pm_train['winter_windBearing_1'] = pm_train['winter']*pm_train['windBearing_1']
+
+pm_train['winter_temp_2'] = pm_train['winter']*pm_train['apparentTemperature_2']
+pm_train['winter_uv_2'] = pm_train['winter']*pm_train['uvIndex_2']
+pm_train['winter_vis_2'] = pm_train['winter']*pm_train['visibility_2']
+pm_train['winter_windSpeed_2'] = pm_train['winter']*pm_train['windSpeed_2']
+pm_train['winter_windBearing_2'] = pm_train['winter']*pm_train['windBearing_2']
+
+pm_train['winter_temp_3'] = pm_train['winter']*pm_train['apparentTemperature_3']
+pm_train['winter_uv_3_3'] = pm_train['winter']*pm_train['uvIndex_3']
+pm_train['winter_vis_3'] = pm_train['winter']*pm_train['visibility_3']
+pm_train['winter_windSpeed_3'] = pm_train['winter']*pm_train['windSpeed_3']
+pm_train['winter_windBearing_3'] = pm_train['winter']*pm_train['windBearing_3']
+
+pm_train['winter_Sunday'] = pm_train['winter']*pm_train['dayofweek_1']
+pm_train['winter_Saturday'] = pm_train['winter']*pm_train['dayofweek_6']
+
+
 #pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
 #pm_train = pm_train.interpolate(method='backfill')
 #pm_train.fillna(pm_train.mean())
@@ -157,14 +187,15 @@ pm_train=pm_train.interpolate()
 pm_train=pm_train.interpolate(method='backfill')
 
 
-pm_train.loc[pm_train['aqi']<10,'aqi'] = 10
+pm_train.loc[pm_train['aqi']<1,'aqi'] = 1
 pm_train['l_aqi'] = np.log(pm_train['aqi'])
 
 pm_train = pm_train[pm_train['type']==worktype]
 y_train = pm_train.loc[:,'l_aqi']
-X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station','dayofweek'],axis=1)
+X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
 X_train = X_train.drop(['winter','type'],axis=1)
 
+#X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station','dayofweek'],axis=1)
 #'dayhours','nighthours',
 #X_train = X_train.drop(['month','hour','type'],axis=1)
 #X_train = X_train.drop(['type', 'source', 'station','year', 'month', 'hour', 'dayofweek'],axis=1)
@@ -181,8 +212,24 @@ for i in range(len(X_train.columns)):
     print(X_train.columns[i])
     print(model.coef_[i])
 
+#print('Log-lin MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
+print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat)))
 
-np.sqrt(mean_squared_error(np.exp(y_train),y_hat))
+
+#modelRF = RandomForestRegressor(n_estimators=1000,
+#                              max_depth=10,
+#                              random_state=10)
+#modelRF.fit(X_train, y_train) 
+#y_hat= modelRF.predict(X_train)
+#
+#
+#print('RF MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
+
+
+
+
+
+exit()
 
 #enc = OneHotEncoder(sparse=False)
 #X_transform = enc.fit_transform(X)
@@ -199,8 +246,8 @@ pm_train['dayofmonth'] = pd.DatetimeIndex(pm_train['date']).day
 pm_train = pm_train[pm_train['type']==worktype]
 pm_train['y_hat'] = y_hat
 
-month = 6
-day = 14;15;14
+month = 1
+day = 15;15;14
 year = 2017
 station = 9;8;11;8;1;6
 ntype = 0
@@ -224,8 +271,11 @@ short_w = weather[(weather['day']>='2017-06-05')&(weather['day']<='2017-08-17')]
 short_w[['date','uvIndex']].set_index('date').plot()
 
 #pm_train.groupby(['year','month','hour'])[['aqi','y_hat','error']].mean().unstack(['month']).plot()
-pm_train.groupby(['month','hour'])[['aqi']].mean().unstack(['month']).plot()
+pm_train.groupby(['month','hour'])[['error']].mean().unstack(['month']).plot()
+pm_train.groupby(['month','hour'])[['cloudCover']].mean().unstack(['month']).plot()
 weather.groupby(['year','month','hour'])[['apparentTemperature']].mean().unstack(['year','month']).plot()
+
+plt.scatter(pm_train['error'],pm_train['winter_h12'])
 
 #location of larges
 #pm_train.groupby(['year','month','hour'])[['error']].mean().unstack(['year','month']).idxmax(axis=1)

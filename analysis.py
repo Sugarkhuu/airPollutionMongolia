@@ -57,7 +57,7 @@ pm_test['dayofmonth'] = pd.DatetimeIndex(pm_test['date']).day
 stations = pm_train.station.unique()
 types    = pm_train.type.unique()
 
-worktype = types[1]
+worktype = types[0]
 
 # day (10-14), night(20-06) betweenHours 7-9,15-20, 
 # winter(11-3), summer(4-10)
@@ -201,19 +201,30 @@ X_train = X_train.drop(['winter','type'],axis=1)
 #X_train = X_train.drop(['type', 'source', 'station','year', 'month', 'hour', 'dayofweek'],axis=1)
 
 
-
+X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
+y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
+X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
+y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
 
 model = LinearRegression()
-model.fit(X_train, y_train) 
-y_hat= np.exp(model.predict(X_train))
+model.fit(X_train_train, y_train_train) 
+y_hat= np.exp(model.predict(X_train_train))
 
 
 for i in range(len(X_train.columns)):
     print(X_train.columns[i])
     print(model.coef_[i])
 
+#training set
+print("On training set:")
 #print('Log-lin MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
-print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat)))
+print(np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat)))
+
+#validation set
+
+print("On validation set:")
+y_hat_valid= np.exp(model.predict(X_train_valid))
+print(np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid)))
 
 
 #modelRF = RandomForestRegressor(n_estimators=1000,

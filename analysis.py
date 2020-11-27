@@ -9,11 +9,16 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-def process_data(df, df_weather,worktype):
+def process_data(df, df_weather,worktype,temp_var):
     wstart = 11
     wend   = 2
     df['winter']=0
     df.loc[~((df['month']>=wend+1)&(df['month']<=wstart-1)),'winter'] = 1    
+    
+    summerStart = 6
+    summerEnd   = 9
+    df['summer']=0
+    df.loc[((df['month']>=summerStart)&(df['month']<=summerEnd)),'summer'] = 1
     df = encoding(df)
     
     df['winter_h9']  = df['winter']*df['hour_9']
@@ -34,35 +39,95 @@ def process_data(df, df_weather,worktype):
     df['winter_h2'] = df['winter']*df['hour_2']
     df['winter_h3'] = df['winter']*df['hour_3']
     df['winter_h4'] = df['winter']*df['hour_4']
+    
+#    df['summer_h9']  = df['summer']*df['hour_9']
+#    df['summer_h10'] = df['summer']*df['hour_10']
+#    df['summer_h11'] = df['summer']*df['hour_11']
+#    df['summer_h12'] = df['summer']*df['hour_12']
+#    df['summer_h13'] = df['summer']*df['hour_13']
+#    df['summer_h14'] = df['summer']*df['hour_14']
+#    df['summer_h15'] = df['summer']*df['hour_15']
+#    df['summer_h16'] = df['summer']*df['hour_16']
+#    
+#    df['summer_h19'] = df['summer']*df['hour_19']
+#    df['summer_h20'] = df['summer']*df['hour_20']
+#    df['summer_h21'] = df['summer']*df['hour_21']
+#    df['summer_h22'] = df['summer']*df['hour_22']
+#    df['summer_h23'] = df['summer']*df['hour_23']
+#    df['summer_h1'] = df['summer']*df['hour_1']
+#    df['summer_h2'] = df['summer']*df['hour_2']
+#    df['summer_h3'] = df['summer']*df['hour_3']
+#    df['summer_h4'] = df['summer']*df['hour_4']
+    
+#    df['spring_h9']  = df['spring']*df['hour_9']
+#    df['spring_h10'] = df['spring']*df['hour_10']
+#    df['spring_h11'] = df['spring']*df['hour_11']
+#    df['spring_h12'] = df['spring']*df['hour_12']
+#    df['spring_h13'] = df['spring']*df['hour_13']
+#    df['spring_h14'] = df['spring']*df['hour_14']
+#    df['spring_h15'] = df['spring']*df['hour_15']
+#    df['spring_h16'] = df['spring']*df['hour_16']
+#    
+#    df['spring_h19'] = df['spring']*df['hour_19']
+#    df['spring_h20'] = df['spring']*df['hour_20']
+#    df['spring_h21'] = df['spring']*df['hour_21']
+#    df['spring_h22'] = df['spring']*df['hour_22']
+#    df['spring_h23'] = df['spring']*df['hour_23']
+#    df['spring_h1'] = df['spring']*df['hour_1']
+#    df['spring_h2'] = df['spring']*df['hour_2']
+#    df['spring_h3'] = df['spring']*df['hour_3']
+#    df['spring_h4'] = df['spring']*df['hour_4']
         
     df = df.merge(df_weather,on='date',how='left')
     
-    df['winter_temp'] = df['winter']*df['apparentTemperature']
-    df['winter_uv'] = df['winter']*df['uvIndex']
-    df['winter_vis'] = df['winter']*df['visibility']
-    df['winter_windSpeed'] = df['winter']*df['windSpeed']
-    df['winter_windBearing'] = df['winter']*df['windBearing']
+    lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']
     
-    df['winter_temp_1'] = df['winter']*df['apparentTemperature_1']
-    df['winter_uv_1'] = df['winter']*df['uvIndex_1']
-    df['winter_vi_s_1'] = df['winter']*df['visibility_1']
-    df['winter_windSpeed_1'] = df['winter']*df['windSpeed_1']
-    df['winter_windBearing_1'] = df['winter']*df['windBearing_1']
-    
-    df['winter_temp_2'] = df['winter']*df['apparentTemperature_2']
-    df['winter_uv_2'] = df['winter']*df['uvIndex_2']
-    df['winter_vis_2'] = df['winter']*df['visibility_2']
-    df['winter_windSpeed_2'] = df['winter']*df['windSpeed_2']
-    df['winter_windBearing_2'] = df['winter']*df['windBearing_2']
-    
-    df['winter_temp_3'] = df['winter']*df['apparentTemperature_3']
-    df['winter_uv_3_3'] = df['winter']*df['uvIndex_3']
-    df['winter_vis_3'] = df['winter']*df['visibility_3']
-    df['winter_windSpeed_3'] = df['winter']*df['windSpeed_3']
-    df['winter_windBearing_3'] = df['winter']*df['windBearing_3']
+    for var in lagvars:
+        for i in range(25):
+            if i !=0:
+                df['winter' + temp_var + '_' + str(i)] = df['winter']*df[temp_var + '_' + str(i)]
+            else:
+                df['winter' + temp_var] = df['winter']*df[temp_var]
+        
+#    df['winter_temp'] = df['winter']*df[temp_var]
+#    df['winter_uv'] = df['winter']*df['uvIndex']
+#    df['winter_vis'] = df['winter']*df['visibility']
+#    df['winter_windSpeed'] = df['winter']*df['windSpeed']
+#    df['winter_windBearing'] = df['winter']*df['windBearing']
+#    
+#    df['winter_temp_1'] = df['winter']*df[temp_var+ '_1']
+#    df['winter_uv_1'] = df['winter']*df['uvIndex_1']
+#    df['winter_vi_s_1'] = df['winter']*df['visibility_1']
+#    df['winter_windSpeed_1'] = df['winter']*df['windSpeed_1']
+#    df['winter_windBearing_1'] = df['winter']*df['windBearing_1']
+#    
+#    df['winter_temp_2'] = df['winter']*df[temp_var+ '_2']
+#    df['winter_uv_2'] = df['winter']*df['uvIndex_2']
+#    df['winter_vis_2'] = df['winter']*df['visibility_2']
+#    df['winter_windSpeed_2'] = df['winter']*df['windSpeed_2']
+#    df['winter_windBearing_2'] = df['winter']*df['windBearing_2']
+#    
+#    df['winter_temp_3'] = df['winter']*df[temp_var+ '_3']
+#    df['winter_uv_3'] = df['winter']*df['uvIndex_3']
+#    df['winter_vis_3'] = df['winter']*df['visibility_3']
+#    df['winter_windSpeed_3'] = df['winter']*df['windSpeed_3']
+#    df['winter_windBearing_3'] = df['winter']*df['windBearing_3']
+                
+#    df['winter_humidity'] = df['winter']*df['humidity']
+#    df['winter_humidity_1'] = df['winter']*df['humidity_1']
+#    df['winter_humidity_2'] = df['winter']*df['humidity_2']
+#    df['winter_humidity_3'] = df['winter']*df['humidity_3']
     
     df['winter_Sunday'] = df['winter']*df['dayofweek_1']
     df['winter_Saturday'] = df['winter']*df['dayofweek_6']  
+
+    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
+    df['winter_dayuvIndex'] = df['winter']*df['dayuvIndex']
+    df['winter_daywindSpeed'] = df['winter']*df['daywindSpeed']
+    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
+    df['winter_daytemp'] = df['winter']*df['temp']
+    df['winter_daytemp_1'] = df['winter']*df['temp_1']
+    df['winter_daytemp_2'] = df['winter']*df['temp_2']
     
     #pm_train = encoding(pm_train)
     df=df.interpolate()
@@ -74,7 +139,7 @@ def process_data(df, df_weather,worktype):
     df = df[df['type']==worktype]
     y_train = df.loc[:,'l_aqi']
     X_train = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
-    X_train = X_train.drop(['winter','type'],axis=1)
+    X_train = X_train.drop(['winter','summer','type'],axis=1)
     
     return y_train, X_train
 
@@ -98,7 +163,7 @@ def initial_process(df):
     df['dayofmonth'] = pd.DatetimeIndex(df['date']).day
     return df
 
-def process_weather(weather):
+def process_weather(weather,temp_var):
     weather['date'] = pd.to_datetime(weather['date'])
     weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
     weather = weather.drop(['Unnamed: 0','summary', 'icon'],axis=1)
@@ -106,27 +171,25 @@ def process_weather(weather):
     weather = weather.sort_values(by='date')
     
     whelp =pd.DataFrame()
-    whelp['temp'] = weather.groupby(weather['day'])['apparentTemperature'].mean()
-    whelp['temp_1'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift()
-    whelp['temp_2'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift(2)
+    whelp['temp'] = weather.groupby(weather['day'])[temp_var].mean()
+    whelp['temp_1'] = weather.groupby(weather['day'])[temp_var].mean().shift()
+    whelp['temp_2'] = weather.groupby(weather['day'])[temp_var].mean().shift(2)
     whelp['dayHumidity'] = weather.groupby(weather['day'])['humidity'].mean()
     whelp['dayuvIndex'] = weather.groupby(weather['day'])['uvIndex'].mean()
     whelp['daywindSpeed'] = weather.groupby(weather['day'])['windSpeed'].mean()
     weather = weather.merge(whelp,on='day',how='left')
     weather = weather.interpolate(method='backfill')
-    #weather['dayAvgTemp'] = weather['apparentTemperature'].groupby(weather['day']).transform('mean').shift()
-    #weather['dayAvgUV'] = weather['uvIndex'].groupby(weather['day']).transform('mean')
-    #weather['dayStdUV'] = weather['uvIndex'].groupby(weather['day']).transform('std')
-    weather = weather.drop(['day','temperature','dewPoint','precipProbability','precipIntensity'],axis=1)
-    #weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
-    #weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
+    weather = weather.drop(['day','dewPoint','precipProbability','precipIntensity'],axis=1)    
+    if temp_var == 'apparentTemperature':
+        weather = weather.drop(['temperature'],axis=1) 
+    else:
+        weather = weather.drop(['apparentTemperature'],axis=1) 
     
-    lagvars = ['apparentTemperature','windSpeed','windBearing','humidity','uvIndex','visibility']
-    
-    for i in range(1,10):
+    lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']    
+    for i in range(1,25):
         for var in lagvars:
             weather[var+'_'+str(i)] = weather[var].diff(i)
-
+            
     return weather
 
 
@@ -161,12 +224,14 @@ worktype = types[0]
 
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
-weather  = process_weather(weather)
+
+temp_var = 'apparentTemperature'
+weather  = process_weather(weather,temp_var)
 
 
 for worktype in types:
     #estimation step
-    y_train, X_train = process_data(pm_train, weather,worktype)
+    y_train, X_train = process_data(pm_train, weather,worktype,temp_var)
     
     X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
     y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
@@ -192,12 +257,15 @@ for worktype in types:
     print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
         
     # prediction step
-    y_test, X_test = process_data(pm_test, weather,worktype)
+    y_test, X_test = process_data(pm_test, weather,worktype,temp_var)
     X_test         = test_add_prep(X_test,X_train)
     
     y_test_hat = np.exp(my_model.predict(X_test))
     pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat
 
+
+#for i in range(len(X_train.columns)):
+#    print(X_train.columns[i],my_model.coef_[i])
 
 
 # post-process

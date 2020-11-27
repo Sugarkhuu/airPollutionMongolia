@@ -8,8 +8,9 @@ from mpl_toolkits import mplot3d
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
-sugar_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
-os.chdir(sugar_dir)
+#s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
+s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
+os.chdir(s_dir)
 
 
 pm_train = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_train.csv')
@@ -19,7 +20,7 @@ weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 def encoding(df):
     df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
     df = pd.get_dummies(df, columns=['hour'], prefix='hour', drop_first=True)
-    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek', drop_first=True)
+#    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek', drop_first=True)
 #    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
 #    df = pd.get_dummies(df, columns=['type'], prefix='type', drop_first=True)
     df = pd.get_dummies(df, columns=['source'], prefix='source', drop_first=True)
@@ -27,7 +28,7 @@ def encoding(df):
 
 
 weather['date'] = pd.to_datetime(weather['date'])
-#weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
+weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
 #weather['year'] = pd.DatetimeIndex(weather['date']).year
 #weather['month'] = pd.DatetimeIndex(weather['date']).month
 #weather['hour'] = pd.DatetimeIndex(weather['date']).hour
@@ -55,7 +56,7 @@ pm_test['dayofmonth'] = pd.DatetimeIndex(pm_test['date']).day
 stations = pm_train.station.unique()
 types    = pm_train.type.unique()
 
-worktype = types[0]
+worktype = types[1]
 
 # day (10-14), night(20-06) betweenHours 7-9,15-20, 
 # winter(11-3), summer(4-10)
@@ -67,15 +68,27 @@ worktype = types[0]
 #type
 
 weather = weather.sort_values(by='date')
-weather = weather.drop(['temperature','dewPoint','precipProbability','precipIntensity'],axis=1)
+
+whelp =pd.DataFrame()
+whelp['temp'] = weather.groupby(weather['day'])['apparentTemperature'].mean()
+whelp['temp_1'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift()
+whelp['temp_2'] = weather.groupby(weather['day'])['apparentTemperature'].mean().shift(2)
+weather = weather.merge(whelp,on='day',how='left')
+weather = weather.interpolate(method='backfill')
+#weather['dayAvgTemp'] = weather['apparentTemperature'].groupby(weather['day']).transform('mean').shift()
+#weather['dayAvgUV'] = weather['uvIndex'].groupby(weather['day']).transform('mean')
+#weather['dayStdUV'] = weather['uvIndex'].groupby(weather['day']).transform('std')
+weather = weather.drop(['day','temperature','dewPoint','precipProbability','precipIntensity'],axis=1)
 #weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
 #weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
 
-lagvars = ['apparentTemperature','windBearing','humidity']
+lagvars = ['apparentTemperature','windSpeed','windBearing','humidity']
 
-for i in range(1,5):
+for i in range(1,3):
     for var in lagvars:
-        weather[var+'_'+str(i)] = weather[var].shift(i)
+        weather[var+'_'+str(i)] = weather[var].diff(i)
+
+
 
 
 wstart = 11
@@ -83,21 +96,43 @@ wend   = 2
 pm_train['winter']=0
 pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1
 
-dstart = 10
-dend   = 14
-pm_train['dayhours']=0
-pm_train.loc[((pm_train['hour']>=dstart)&(pm_train['hour']<=dend)),'dayhours'] = 1
-
-nstart = 20
-nend   = 3
-pm_train['nighthours']=0
-pm_train.loc[~((pm_train['hour']>=nend+1)&(pm_train['hour']<=nstart-1)),'nighthours'] = 1
+#dstart = 10
+#dend   = 15
+#pm_train['dayhours']=0
+#pm_train.loc[((pm_train['hour']>=dstart)&(pm_train['hour']<=dend)),'dayhours'] = 1
+#
+#nstart = 20
+#nend   = 5
+#pm_train['nighthours']=0
+#pm_train.loc[~((pm_train['hour']>=nend+1)&(pm_train['hour']<=nstart-1)),'nighthours'] = 1
 
 #winter dayhours
 #winter nighthours
 
-pm_train['winter_dayhours'] = pm_train['winter']*pm_train['dayhours']
-pm_train['winter_nighthours'] = pm_train['winter']*pm_train['nighthours']
+pm_train = encoding(pm_train)
+
+
+pm_train['winter_h9']  = pm_train['winter']*pm_train['hour_9']
+pm_train['winter_h10'] = pm_train['winter']*pm_train['hour_10']
+pm_train['winter_h11'] = pm_train['winter']*pm_train['hour_11']
+pm_train['winter_h12'] = pm_train['winter']*pm_train['hour_12']
+pm_train['winter_h13'] = pm_train['winter']*pm_train['hour_13']
+pm_train['winter_h14'] = pm_train['winter']*pm_train['hour_14']
+pm_train['winter_h15'] = pm_train['winter']*pm_train['hour_15']
+pm_train['winter_h16'] = pm_train['winter']*pm_train['hour_16']
+
+pm_train['winter_h19'] = pm_train['winter']*pm_train['hour_19']
+pm_train['winter_h20'] = pm_train['winter']*pm_train['hour_20']
+pm_train['winter_h21'] = pm_train['winter']*pm_train['hour_21']
+pm_train['winter_h22'] = pm_train['winter']*pm_train['hour_22']
+pm_train['winter_h23'] = pm_train['winter']*pm_train['hour_23']
+pm_train['winter_h1'] = pm_train['winter']*pm_train['hour_1']
+pm_train['winter_h2'] = pm_train['winter']*pm_train['hour_2']
+pm_train['winter_h3'] = pm_train['winter']*pm_train['hour_3']
+pm_train['winter_h4'] = pm_train['winter']*pm_train['hour_4']
+
+#pm_train['winter_dayhours'] = pm_train['winter']*pm_train['dayhours']
+#pm_train['winter_nighthours'] = pm_train['winter']*pm_train['nighthours']
 
 
 
@@ -105,8 +140,8 @@ pm_train['winter_nighthours'] = pm_train['winter']*pm_train['nighthours']
 
 pm_train = pm_train.merge(weather,on='date',how='left')
 #pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
-pm_train = pm_train.interpolate()
-
+#pm_train = pm_train.interpolate(method='backfill')
+#pm_train.fillna(pm_train.mean())
 
 #var_list = ['month','station','type','hour','dayofweek',
 #            'precipIntensity','precipProbability', 'temperature', 'apparentTemperature', 'dewPoint',
@@ -117,7 +152,9 @@ pm_train = pm_train.interpolate()
 #pm_test_X = pm_test[var_list]
 
 
-pm_train = encoding(pm_train)
+#pm_train = encoding(pm_train)
+pm_train=pm_train.interpolate()
+pm_train=pm_train.interpolate(method='backfill')
 
 
 pm_train.loc[pm_train['aqi']<10,'aqi'] = 10
@@ -125,8 +162,11 @@ pm_train['l_aqi'] = np.log(pm_train['aqi'])
 
 pm_train = pm_train[pm_train['type']==worktype]
 y_train = pm_train.loc[:,'l_aqi']
-X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station'],axis=1)
-X_train = X_train.drop(['dayhours','nighthours','winter','type'],axis=1)
+X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station','dayofweek'],axis=1)
+X_train = X_train.drop(['winter','type'],axis=1)
+
+#'dayhours','nighthours',
+#X_train = X_train.drop(['month','hour','type'],axis=1)
 #X_train = X_train.drop(['type', 'source', 'station','year', 'month', 'hour', 'dayofweek'],axis=1)
 
 
@@ -160,14 +200,15 @@ pm_train = pm_train[pm_train['type']==worktype]
 pm_train['y_hat'] = y_hat
 
 month = 6
-day = 14
+day = 14;15;14
 year = 2017
-station = 5;8;1;6
+station = 9;8;11;8;1;6
 ntype = 0
 
 pm_train['month'] = pd.DatetimeIndex(pm_train['date']).month
 pm_train = pm_train.merge(weather,on='date',how='left')
-sample = pm_train[(pm_train['month']==month)&(pm_train['type']==types[ntype])]
+pm_train['error']=pm_train['aqi']-pm_train['y_hat']
+sample = pm_train[(pm_train['month']==month)&(pm_train['type']==worktype)]
 sample = sample[sample['year']==year]
 simple_draw = sample.groupby(['dayofmonth','hour'])[['aqi','y_hat']].mean().unstack(['dayofmonth'])
 
@@ -175,6 +216,27 @@ simple_draw = sample.groupby(['dayofmonth','hour'])[['aqi','y_hat']].mean().unst
 simple_draw.loc[:,('aqi',day)].plot()
 simple_draw.loc[:,('y_hat',day)].plot()
 
+weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
+weather['month'] = pd.DatetimeIndex(weather['date']).month
+weather['hour'] = pd.DatetimeIndex(weather['date']).hour
+weather['year'] = pd.DatetimeIndex(weather['date']).year
+short_w = weather[(weather['day']>='2017-06-05')&(weather['day']<='2017-08-17')]
+short_w[['date','uvIndex']].set_index('date').plot()
+
+#pm_train.groupby(['year','month','hour'])[['aqi','y_hat','error']].mean().unstack(['month']).plot()
+pm_train.groupby(['month','hour'])[['aqi']].mean().unstack(['month']).plot()
+weather.groupby(['year','month','hour'])[['apparentTemperature']].mean().unstack(['year','month']).plot()
+
+#location of larges
+#pm_train.groupby(['year','month','hour'])[['error']].mean().unstack(['year','month']).idxmax(axis=1)
+#(pm_train.groupby(['year','month','hour'])[['error']].mean().unstack(['year','month'])>50).sum()
+
+Index(['date', 'apparentTemperature', 'humidity', 'windSpeed', 'windBearing',
+       'cloudCover', 'uvIndex', 'visibility', 'apparentTemperature_1',
+       'windBearing_1', 'humidity_1', 'apparentTemperature_2', 'windBearing_2',
+       'humidity_2', 'apparentTemperature_3', 'windBearing_3', 'humidity_3',
+       'apparentTemperature_4', 'windBearing_4', 'humidity_4', 'day'],
+      dtype='object')
 
 ### prediction phase
 

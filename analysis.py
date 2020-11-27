@@ -17,11 +17,11 @@ pm_test = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_test.csv')
 weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 
 def encoding(df):
-#    df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
-#    df = pd.get_dummies(df, columns=['hour'], prefix='hour', drop_first=True)
+    df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
+    df = pd.get_dummies(df, columns=['hour'], prefix='hour', drop_first=True)
     df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek', drop_first=True)
 #    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
-    df = pd.get_dummies(df, columns=['type'], prefix='type', drop_first=True)
+#    df = pd.get_dummies(df, columns=['type'], prefix='type', drop_first=True)
     df = pd.get_dummies(df, columns=['source'], prefix='source', drop_first=True)
     return df
 
@@ -70,15 +70,15 @@ weather = weather.drop(['temperature','dewPoint','precipProbability','precipInte
 #weather = weather[['date','apparentTemperature','windSpeed', 'windBearing']]
 #weather.groupby(['year','month','dayofmonth','hour'])['dewPoint'].mean().unstack(['year','month','dayofmonth']).loc[:,(slice(None),month,dayofmonth)].plot()
 
-lagvars = ['apparentTemperature','windBearing']
+lagvars = ['apparentTemperature','windBearing','humidity']
 
-for i in range(4,5):
+for i in range(1,5):
     for var in lagvars:
         weather[var+'_'+str(i)] = weather[var].shift(i)
 
 
-wstart = 9
-wend   = 5
+wstart = 10
+wend   = 3
 pm_train['winter']=0
 pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1
 
@@ -88,7 +88,7 @@ pm_train['dayhours']=0
 pm_train.loc[((pm_train['hour']>=dstart)&(pm_train['hour']<=dend)),'dayhours'] = 1
 
 nstart = 20
-nend   = 2
+nend   = 3
 pm_train['nighthours']=0
 pm_train.loc[~((pm_train['hour']>=nend+1)&(pm_train['hour']<=nstart-1)),'nighthours'] = 1
 
@@ -103,7 +103,7 @@ pm_train['winter_nighthours'] = pm_train['winter']*pm_train['nighthours']
 #weather = weather.drop(['day', 'year', 'month', 'hour', 'dayofweek', 'dayofmonth'],axis=1)
 
 pm_train = pm_train.merge(weather,on='date',how='left')
-pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
+#pm_train['winter_temp'] = pm_train['winter']*pm_train['apparentTemperature']
 pm_train = pm_train.interpolate()
 
 
@@ -115,18 +115,25 @@ pm_train = pm_train.interpolate()
 #pm_back_X = pm_back[var_list]
 #pm_test_X = pm_test[var_list]
 
+
 pm_train = encoding(pm_train)
-y_train = pm_train.loc[:,'aqi']
-X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','dayofmonth','day','month','hour','station'],axis=1)
-#X_train = pm_train.drop(['ID','date','latitude','longitude','aqi','dayofmonth','day'],axis=1)
+
+
+pm_train.loc[pm_train['aqi']<10,'aqi'] = 10
+pm_train['l_aqi'] = np.log(pm_train['aqi'])
+
+pm_train = pm_train[pm_train['type']==types[1]]
+y_train = pm_train.loc[:,'l_aqi']
+X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station'],axis=1)
+X_train = X_train.drop(['dayhours','nighthours','winter','type'],axis=1)
 #X_train = X_train.drop(['type', 'source', 'station','year', 'month', 'hour', 'dayofweek'],axis=1)
 
 
 
 
-model = LinearRegression(normalize=True,fit_intercept=True)
+model = LinearRegression()
 model.fit(X_train, y_train) 
-y_hat= model.predict(X_train)
+y_hat= np.exp(model.predict(X_train))
 
 
 for i in range(len(X_train.columns)):
@@ -134,7 +141,7 @@ for i in range(len(X_train.columns)):
     print(model.coef_[i])
 
 
-np.sqrt(mean_squared_error(y_train,y_hat))
+np.sqrt(mean_squared_error(np.exp(y_train),y_hat))
 
 #enc = OneHotEncoder(sparse=False)
 #X_transform = enc.fit_transform(X)
@@ -148,9 +155,10 @@ pm_train['hour'] = pd.DatetimeIndex(pm_train['date']).hour
 pm_train['dayofweek'] = pd.DatetimeIndex(pm_train['date']).dayofweek
 pm_train['dayofmonth'] = pd.DatetimeIndex(pm_train['date']).day
 
+pm_train = pm_train[pm_train['type']==types[0]]
 pm_train['y_hat'] = y_hat
 
-month = 9
+month = 6
 day = 14
 year = 2017
 station = 6
@@ -186,7 +194,7 @@ pm_test['winter_nighthours'] = pm_test['winter']*pm_test['nighthours']
 #weather = weather.drop(['day', 'year', 'month', 'hour', 'dayofweek', 'dayofmonth'],axis=1)
 
 pm_test = pm_test.merge(weather,on='date',how='left')
-pm_test['winter_temp'] = pm_test['winter']*pm_test['apparentTemperature']
+#pm_test['winter_temp'] = pm_test['winter']*pm_test['apparentTemperature']
 
 #var_list = ['month','station','type','hour','dayofweek',
 #            'precipIntensity','precipProbability', 'temperature', 'apparentTemperature', 'dewPoint',
@@ -199,8 +207,9 @@ pm_test['winter_temp'] = pm_test['winter']*pm_test['apparentTemperature']
 pm_test_backup = pm_test.copy()
 pm_test = encoding(pm_test)
 
-X_test = pm_test.drop(['ID','year','date','latitude','longitude','aqi','dayofmonth','day','month','hour','station'],axis=1)
-
+pm_test = pm_test[pm_test['type']==types[1]]
+X_test = pm_test.drop(['ID','year','date','latitude','longitude','aqi','dayofmonth','day','station'],axis=1)
+X_test = X_test.drop(['dayhours','nighthours','winter','type'],axis=1)
 
 
 missing_cols = np.setdiff1d(X_train.columns, X_test.columns)
@@ -214,8 +223,8 @@ X_test = X_test.interpolate()
 
 y_test= model.predict(X_test)
 
-pm_test = pm_test_backup
-pm_test['y_test'] = y_test
+#pm_test = pm_test_backup
+pm_test['y_test'] = np.exp(y_test)
 df_mean = pm_train.groupby(['month','dayofmonth','hour','station','type']).agg({'aqi':['median']})
 df_mean.columns = ['aqi_median']
 df_mean = df_mean.reset_index()
@@ -232,15 +241,35 @@ weird = pm_test[pm_test['y_test']<0]
 weird['y_test'].hist(bins=100)
 
 
-pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'y_test'] = pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'aqi_median'] 
-pm_test.loc[(pm_test['y_test']<0),'y_test'] = 20
-pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull(),'y_test'] 
+#pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'y_test'] = pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'aqi_median'] 
+#pm_test.loc[(pm_test['y_test']<0),'y_test'] = 20
 
-submission = pm_test[['ID','aqi']].copy()
+#pm_test_backup
+pm_test0 = pm_test_backup[pm_test_backup['type']==types[0]]
+pm_test1 = pm_test_backup[pm_test_backup['type']==types[1]]
+pm_test0['y_test'] = np.exp(y_test0)
+pm_test1['y_test'] = np.exp(y_test1)
+pm_res = pd.concat([pm_test0,pm_test1])
+
+pm_res.loc[pm_res['aqi'].isnull(),'aqi'] = pm_res.loc[pm_res['aqi'].isnull(),'y_test'] 
+
+
+
+#y_test1 = y_test
+#y_test0=y_test1
+#y_test1 = y_test
+
+
+submission = pm_res[['ID','aqi']].copy()
 #submission.loc[submission['aqi']<0,'aqi'] = 20.0
-submission.loc[submission['aqi']>50,'aqi'] = submission.loc[submission['aqi']>50,'aqi']-30
+#submission.loc[submission['aqi']>100,'aqi'] = submission.loc[submission['aqi']>100,'aqi']-40
 submission.to_csv('submission.csv',index=False)
 
+old = pd.read_csv('submission843.csv')
+plt.scatter(old['aqi'],submission['aqi'])
+old['aqi'].hist(bins=100)
+plt.figure()
+submission['aqi'].hist(bins=100)
 
 
 print(df)

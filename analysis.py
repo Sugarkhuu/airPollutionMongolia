@@ -55,6 +55,7 @@ pm_test['dayofmonth'] = pd.DatetimeIndex(pm_test['date']).day
 stations = pm_train.station.unique()
 types    = pm_train.type.unique()
 
+worktype = types[0]
 
 # day (10-14), night(20-06) betweenHours 7-9,15-20, 
 # winter(11-3), summer(4-10)
@@ -77,8 +78,8 @@ for i in range(1,5):
         weather[var+'_'+str(i)] = weather[var].shift(i)
 
 
-wstart = 10
-wend   = 3
+wstart = 11
+wend   = 2
 pm_train['winter']=0
 pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1
 
@@ -122,7 +123,7 @@ pm_train = encoding(pm_train)
 pm_train.loc[pm_train['aqi']<10,'aqi'] = 10
 pm_train['l_aqi'] = np.log(pm_train['aqi'])
 
-pm_train = pm_train[pm_train['type']==types[1]]
+pm_train = pm_train[pm_train['type']==worktype]
 y_train = pm_train.loc[:,'l_aqi']
 X_train = pm_train.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','station'],axis=1)
 X_train = X_train.drop(['dayhours','nighthours','winter','type'],axis=1)
@@ -155,16 +156,17 @@ pm_train['hour'] = pd.DatetimeIndex(pm_train['date']).hour
 pm_train['dayofweek'] = pd.DatetimeIndex(pm_train['date']).dayofweek
 pm_train['dayofmonth'] = pd.DatetimeIndex(pm_train['date']).day
 
-pm_train = pm_train[pm_train['type']==types[0]]
+pm_train = pm_train[pm_train['type']==worktype]
 pm_train['y_hat'] = y_hat
 
 month = 6
 day = 14
 year = 2017
-station = 6
+station = 5;8;1;6
 ntype = 0
 
 pm_train['month'] = pd.DatetimeIndex(pm_train['date']).month
+pm_train = pm_train.merge(weather,on='date',how='left')
 sample = pm_train[(pm_train['month']==month)&(pm_train['type']==types[ntype])]
 sample = sample[sample['year']==year]
 simple_draw = sample.groupby(['dayofmonth','hour'])[['aqi','y_hat']].mean().unstack(['dayofmonth'])
@@ -207,7 +209,7 @@ pm_test = pm_test.merge(weather,on='date',how='left')
 pm_test_backup = pm_test.copy()
 pm_test = encoding(pm_test)
 
-pm_test = pm_test[pm_test['type']==types[1]]
+pm_test = pm_test[pm_test['type']==worktype]
 X_test = pm_test.drop(['ID','year','date','latitude','longitude','aqi','dayofmonth','day','station'],axis=1)
 X_test = X_test.drop(['dayhours','nighthours','winter','type'],axis=1)
 
@@ -244,7 +246,7 @@ weird['y_test'].hist(bins=100)
 #pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'y_test'] = pm_test.loc[((pm_test['y_test']<0)&~(pm_test['aqi_median'].isnull())),'aqi_median'] 
 #pm_test.loc[(pm_test['y_test']<0),'y_test'] = 20
 
-#pm_test_backup
+# combine result
 pm_test0 = pm_test_backup[pm_test_backup['type']==types[0]]
 pm_test1 = pm_test_backup[pm_test_backup['type']==types[1]]
 pm_test0['y_test'] = np.exp(y_test0)

@@ -31,6 +31,9 @@ pm_test  = initial_process(pm_test)
 temp_var = 'apparentTemperature'
 weather  = process_weather(weather,temp_var)
 
+pm_train.loc[pm_train['aqi']>400,'aqi'] = 400
+
+
 pm_train_c = pm_train.copy()
 
 for worktype in types:
@@ -60,7 +63,7 @@ for worktype in types:
     y_hat_tot= np.exp(my_model.predict(X_train))
     print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
     pm_train_c.loc[pm_train_c['type']==worktype,'y_test'] = y_hat_tot
-    pm_train_c.loc[pm_train_c['type']==worktype,'error'] = pm_train_c.loc[pm_train_c['type']==worktype,'aqi'] - y_hat_tot
+    pm_train_c.loc[pm_train_c['type']==worktype,'error'] = y_hat_tot - pm_train_c.loc[pm_train_c['type']==worktype,'aqi']
         
     # prediction step
     y_test, X_test = process_data(pm_test, weather,worktype,temp_var)
@@ -68,8 +71,6 @@ for worktype in types:
     
     y_test_hat = np.exp(my_model.predict(X_test))
     pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat
-
-
 
 
 # post-process
@@ -84,27 +85,28 @@ plt.scatter(old['aqi'],submission['aqi'])
 old['aqi'].hist(bins=100)
 plt.figure()
 submission['aqi'].hist(bins=100)
+
+print("from last submission:")
 print(np.sqrt(mean_squared_error(submission['aqi'],old['aqi'])))
 
-#modelRF = RandomForestRegressor(n_estimators=1000,
-#                              max_depth=10,
-#                              random_state=10)
-#modelRF.fit(X_train, y_train) 
-#y_hat= modelRF.predict(X_train)
-#
-#
-#print('RF MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
 
+np.sqrt(5931*(200**2)/132000)
+
+
+# IDEAS: try winter by sth else
+
+
+# check error
 
 pm_train = pm_train_c.copy()
 
 
 
-wstart = 10
-wend   = 3
+wstart = 9
+wend   = 5
 pm_train['winter']=0
 pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1    
-pm_train_winter = pm_train[pm_train['winter']==1]    
+pm_train_winter = pm_train[pm_train['winter']==0]    
 
 
 sns.boxplot(y='error', x='type', 
@@ -114,9 +116,28 @@ sns.boxplot(y='error', x='type',
 
 plt.hist(pm_train_winter['error'],bins=100)
 
+short = pm_train.groupby(['year','month'])['aqi'].mean().reset_index()
 
-g = sns.FacetGrid(pm_train_winter, row="year", col="month", hue="type",margin_titles=True)
-g.map(sns.regplot, "hour", "error", color=".3", fit_reg=False, x_jitter=.1)
+plt.scatter(short['month'],short['aqi'],c=short['year'])
+
+plt.scatter(pm_train['month'],pm_train['aqi'],c=pm_train['year'])
+plt.scatter(weather['month'],weather['temperature'],c=weather['year'])
+
+plt.scatter(pm_train['aqi'],pm_train['error'])
+
+
+weather = initial_process(weather)
+weather['temperature']
+pm_train = pm_train.merge(weather,on='date',how='left')
+
+sns.boxplot(y='aqi', x='month', 
+                 data=pm_train, 
+                 palette="colorblind",
+                 hue='year')
+
+
+g = sns.FacetGrid(pm_train, row="year", col="month", hue="type",margin_titles=True)
+g.map(sns.regplot, "hour", "aqi", color=".3", fit_reg=False, x_jitter=.1)
 
                 
 exit()

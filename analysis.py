@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import os
 
 
@@ -10,10 +11,15 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 def process_data(df, df_weather,worktype,temp_var):
-    wstart = 11
-    wend   = 2
+    winterStart = 11
+    winterEnd   = 2
     df['winter']=0
-    df.loc[~((df['month']>=wend+1)&(df['month']<=wstart-1)),'winter'] = 1    
+    df.loc[~((df['month']>=winterEnd+1)&(df['month']<=winterStart-1)),'winter'] = 1    
+    
+    deepWinterStart = 12
+    deepWinterEnd   = 1
+    df['deepWinter']=0
+    df.loc[~((df['month']>=wend+1)&(df['month']<=wstart-1)),'deepWinter'] = 1    
     
     summerStart = 6
     summerEnd   = 9
@@ -21,63 +27,23 @@ def process_data(df, df_weather,worktype,temp_var):
     df.loc[((df['month']>=summerStart)&(df['month']<=summerEnd)),'summer'] = 1
     df = encoding(df)
     
-    df['winter_h9']  = df['winter']*df['hour_9']
-    df['winter_h10'] = df['winter']*df['hour_10']
-    df['winter_h11'] = df['winter']*df['hour_11']
-    df['winter_h12'] = df['winter']*df['hour_12']
-    df['winter_h13'] = df['winter']*df['hour_13']
-    df['winter_h14'] = df['winter']*df['hour_14']
-    df['winter_h15'] = df['winter']*df['hour_15']
-    df['winter_h16'] = df['winter']*df['hour_16']
-    
-    df['winter_h19'] = df['winter']*df['hour_19']
-    df['winter_h20'] = df['winter']*df['hour_20']
-    df['winter_h21'] = df['winter']*df['hour_21']
-    df['winter_h22'] = df['winter']*df['hour_22']
-    df['winter_h23'] = df['winter']*df['hour_23']
-    df['winter_h1'] = df['winter']*df['hour_1']
-    df['winter_h2'] = df['winter']*df['hour_2']
-    df['winter_h3'] = df['winter']*df['hour_3']
-    df['winter_h4'] = df['winter']*df['hour_4']
-    
-#    df['summer_h9']  = df['summer']*df['hour_9']
-#    df['summer_h10'] = df['summer']*df['hour_10']
-#    df['summer_h11'] = df['summer']*df['hour_11']
-#    df['summer_h12'] = df['summer']*df['hour_12']
-#    df['summer_h13'] = df['summer']*df['hour_13']
-#    df['summer_h14'] = df['summer']*df['hour_14']
-#    df['summer_h15'] = df['summer']*df['hour_15']
-#    df['summer_h16'] = df['summer']*df['hour_16']
-#    
-#    df['summer_h19'] = df['summer']*df['hour_19']
-#    df['summer_h20'] = df['summer']*df['hour_20']
-#    df['summer_h21'] = df['summer']*df['hour_21']
-#    df['summer_h22'] = df['summer']*df['hour_22']
-#    df['summer_h23'] = df['summer']*df['hour_23']
-#    df['summer_h1'] = df['summer']*df['hour_1']
-#    df['summer_h2'] = df['summer']*df['hour_2']
-#    df['summer_h3'] = df['summer']*df['hour_3']
-#    df['summer_h4'] = df['summer']*df['hour_4']
-    
-#    df['spring_h9']  = df['spring']*df['hour_9']
-#    df['spring_h10'] = df['spring']*df['hour_10']
-#    df['spring_h11'] = df['spring']*df['hour_11']
-#    df['spring_h12'] = df['spring']*df['hour_12']
-#    df['spring_h13'] = df['spring']*df['hour_13']
-#    df['spring_h14'] = df['spring']*df['hour_14']
-#    df['spring_h15'] = df['spring']*df['hour_15']
-#    df['spring_h16'] = df['spring']*df['hour_16']
-#    
-#    df['spring_h19'] = df['spring']*df['hour_19']
-#    df['spring_h20'] = df['spring']*df['hour_20']
-#    df['spring_h21'] = df['spring']*df['hour_21']
-#    df['spring_h22'] = df['spring']*df['hour_22']
-#    df['spring_h23'] = df['spring']*df['hour_23']
-#    df['spring_h1'] = df['spring']*df['hour_1']
-#    df['spring_h2'] = df['spring']*df['hour_2']
-#    df['spring_h3'] = df['spring']*df['hour_3']
-#    df['spring_h4'] = df['spring']*df['hour_4']
+    dayHStart = 9
+    dayHEnd   = 16
+    for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]
+
         
+    nightHStart = 20
+    nightHEnd   = 4
+    for hour in np.linspace(nightHStart,23,23-nightHStart+1):
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]       
+    for hour in np.linspace(1,nightHEnd,nightHEnd-1+1):
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]    
+
+            
     df = df.merge(df_weather,on='date',how='left')
     
     lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']
@@ -113,14 +79,16 @@ def process_data(df, df_weather,worktype,temp_var):
     df=df.interpolate(method='backfill')
     
     df.loc[df['aqi']<10,'aqi'] = 10 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
+    df.loc[((df['aqi']>450)&(df['winter']!=1)),'aqi'] = 450
     df['l_aqi'] = np.log(df['aqi'])
     
     df = df[df['type']==worktype]
-    y_train = df.loc[:,'l_aqi']
-    X_train = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
-    X_train = X_train.drop(['winter','summer','type'],axis=1)
+    Y = df.loc[:,'l_aqi']
+    X = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
+    X = X.drop(['winter','summer','type'],axis=1)
     
-    return y_train, X_train
+    
+    return Y, X
 
 def encoding(df):
     df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
@@ -207,6 +175,7 @@ pm_test  = initial_process(pm_test)
 temp_var = 'apparentTemperature'
 weather  = process_weather(weather,temp_var)
 
+pm_train_c = pm_train.copy()
 
 for worktype in types:
     #estimation step
@@ -234,6 +203,8 @@ for worktype in types:
     my_model = my_estimate(X_train,y_train)
     y_hat_tot= np.exp(my_model.predict(X_train))
     print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
+    pm_train_c.loc[pm_train_c['type']==worktype,'y_test'] = y_hat_tot
+    pm_train_c.loc[pm_train_c['type']==worktype,'error'] = pm_train_c.loc[pm_train_c['type']==worktype,'aqi'] - y_hat_tot
         
     # prediction step
     y_test, X_test = process_data(pm_test, weather,worktype,temp_var)
@@ -271,9 +242,29 @@ print(np.sqrt(mean_squared_error(submission['aqi'],old['aqi'])))
 #print('RF MSE On validation Data: {}'.format(np.sqrt(mean_squared_error(np.exp(y_train),y_hat))))
 
 
+pm_train = pm_train_c.copy()
 
 
 
+wstart = 12
+wend   = 1
+pm_train['winter']=0
+pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1    
+pm_train_winter = pm_train[pm_train['winter']==1]    
+
+
+sns.boxplot(y='error', x='type', 
+                 data=pm_train_winter, 
+                 palette="colorblind",
+                 hue='hour')
+
+plt.hist(pm_train_winter['error'])
+
+
+g = sns.FacetGrid(pm_train_winter, row="year", col="month", hue="type",margin_titles=True)
+g.map(sns.regplot, "hour", "error", color=".3", fit_reg=False, x_jitter=.1)
+
+                
 exit()
 
 #enc = OneHotEncoder(sparse=False)

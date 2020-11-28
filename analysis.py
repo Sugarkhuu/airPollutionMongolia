@@ -70,11 +70,6 @@ for worktype in types:
     pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat
 
 
-# try summary and icon
-# try more lags
-
-#for i in range(len(X_train.columns)):
-#    print(X_train.columns[i],my_model.coef_[i])
 
 
 # post-process
@@ -105,8 +100,8 @@ pm_train = pm_train_c.copy()
 
 
 
-wstart = 12
-wend   = 1
+wstart = 10
+wend   = 3
 pm_train['winter']=0
 pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winter'] = 1    
 pm_train_winter = pm_train[pm_train['winter']==1]    
@@ -117,7 +112,7 @@ sns.boxplot(y='error', x='type',
                  palette="colorblind",
                  hue='hour')
 
-plt.hist(pm_train_winter['error'])
+plt.hist(pm_train_winter['error'],bins=100)
 
 
 g = sns.FacetGrid(pm_train_winter, row="year", col="month", hue="type",margin_titles=True)

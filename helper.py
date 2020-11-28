@@ -3,33 +3,41 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 def process_data(df, df_weather,worktype,temp_var):
-    winterStart = 10
-    winterEnd   = 4
-    df['winter']=0
-    df.loc[~((df['month']>=winterEnd+1)&(df['month']<=winterStart-1)),'winter'] = 1    
+    winterStart = 11
+    winterEnd   = 2
+
+    summerStart = 6
+    summerEnd   = 9
     
     deepWinterStart = 12
     deepWinterEnd   = 1
+    
+    nightHStart = 21;20
+    nightHEnd   = 3;4
+
+    dayHStart = 10;9
+    dayHEnd   = 15;16
+
+    df['winter']=0
+    df.loc[~((df['month']>=winterEnd+1)&(df['month']<=winterStart-1)),'winter'] = 1    
+    
+
     df['deepWinter']=0
     df.loc[~((df['month']>=deepWinterEnd+1)&(df['month']<=deepWinterStart-1)),'deepWinter'] = 1    
     
-    summerStart = 6
-    summerEnd   = 9
+
     df['summer']=0
     df.loc[((df['month']>=summerStart)&(df['month']<=summerEnd)),'summer'] = 1
     
     
     df = encoding(df)
     
-    dayHStart = 9
-    dayHEnd   = 16
     for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
         df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]
 
         
-    nightHStart = 20
-    nightHEnd   = 4
+
     for hour in np.linspace(nightHStart,23,23-nightHStart+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
         df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]       
@@ -107,7 +115,8 @@ def initial_process(df):
 def process_weather(weather,temp_var):
     weather['date'] = pd.to_datetime(weather['date'])
     weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
-    weather = weather.drop(['Unnamed: 0','summary', 'icon'],axis=1)
+    weather = pd.get_dummies(weather, columns=['icon'], prefix='icon', drop_first=True)
+    weather = weather.drop(['Unnamed: 0', 'summary'],axis=1)
     weather = weather.interpolate()
     weather = weather.sort_values(by='date')
     

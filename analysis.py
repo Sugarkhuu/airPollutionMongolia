@@ -13,12 +13,12 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-from helper import *
-
 s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
 #s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
 os.chdir(s_dir)
 
+
+from helper import *
 
 pm_train = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_train.csv')
 pm_test = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_test.csv')
@@ -27,7 +27,7 @@ weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 stations = pm_train.station.unique()
 types    = pm_train.type.unique()
 worktype = types[0]
-if_log = False
+if_log = True
 
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
@@ -35,12 +35,14 @@ pm_test  = initial_process(pm_test)
 temp_var = 'apparentTemperature'
 weather  = process_weather(weather,temp_var)
 
-pm_train.loc[pm_train['aqi']>600,'aqi'] = 600
+#pm_train.loc[pm_train['aqi']>400,'aqi'] = 400
+#pm_train = pm_train[pm_train['month'].isin(pm_test['month'].unique())]
 
 
 pm_train_c = pm_train.copy()
 
 for worktype in types:
+    print("Starting type: ", worktype)
     #estimation step
     y_train, X_train = process_data(pm_train, weather,worktype,temp_var,if_log)
     
@@ -49,6 +51,7 @@ for worktype in types:
     X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
     y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
         
+    print("Estimation ------------------: ")
     my_model = my_estimate(X_train_train,y_train_train)
     
     if if_log:
@@ -98,67 +101,126 @@ for worktype in types:
     pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat        
 
 
+print('Processing done.')
+
+test_valid = pm_test.loc[~pm_test['aqi'].isnull(),'aqi'] 
+test_hat   = pm_test.loc[~pm_test['aqi'].isnull(),'y_test'] 
+print("From available:")
+print(np.sqrt(mean_squared_error(test_valid,test_hat)))
+plt.scatter(test_valid, test_hat)
 
 # post-process
+pm_test['aqi_back'] = pm_test['aqi']
+pm_test['error']    = pm_test['y_test'] - pm_test['aqi']
 pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull(),'y_test'] 
 
 submission = pm_test[['ID','aqi']].copy()
 assert submission['aqi'].isnull().sum() == 0
 submission.to_csv('submission.csv',index=False)
 
-old = pd.read_csv('submission6701.csv')
-plt.scatter(old['aqi'],submission['aqi'])
-old['aqi'].hist(bins=100)
-plt.figure()
-submission['aqi'].hist(bins=100)
 
 print("from last submission:")
-print(np.sqrt(mean_squared_error(submission['aqi'],old['aqi'])))
+best = pd.read_csv('submission667.csv')
+best = best.rename(columns={'aqi': "aqi_best"})
+pm_test = pm_test.merge(best,on='ID',how = 'left')
+print(np.sqrt(mean_squared_error(submission['aqi'],best['aqi_best'])))
 
-#submission['aqi'] = (old['aqi'] + submission['aqi'])/2
 
-np.sqrt(5931*(200**2)/132000)
 
-#On training set:
-#42.80394666055919
-#On validation set:
-#45.594903806496156
-#On total set:
-#42.73394849795931
-#On training set:
-#49.53927867770662
-#On validation set:
-#50.70880285397596
-#On total set:
-#48.953945971801076
-#
-#pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull(),'y_test'] 
-#
-#submission = pm_test[['ID','aqi']].copy()
-#
-#assert submission['aqi'].isnull().sum() == 0
-#
-#submission.to_csv('submission.csv',index=False)
-#
-#print(np.sqrt(mean_squared_error(submission['aqi'],old['aqi'])))
-#57.98343853767739
+largess
 
+plt.scatter(old['aqi'],submission['aqi'])
+plt.figure()
+old['aqi'].hist(bins=100)
+submission['aqi'].hist(bins=100)
+
+a=pd.DataFrame()
+a['old'] = old['aqi']
+a['sub'] = submission['aqi']
+
+a[['sub','old']].plot()
 
 # IDEAS: try winter by sth else
 # minimum of last day
 # explore peaks and get dummy for them
 # wind speed and difference in stations
 # difference between temp and apparTemp
+
+# should be careful about humidity as it has outliers in winter time
+# temperature variables could be in logs
+# a month can be divided into two parts: early, late
+
 #https://towardsdatascience.com/recurrent-neural-networks-by-example-in-python-ffd204f99470
 #https://towardsdatascience.com/my-secret-sauce-to-be-in-top-2-of-a-kaggle-competition-57cff0677d3c
 
 
-# check error
+test_avg = pm_test.iloc[65000:][pm_test['month'].isin([3,10,11])].groupby(['month','hour'])['aqi'].mean()
+train_avg = pm_train[pm_train['month'].isin([3,10,11])].groupby(['month','hour'])['aqi'].mean()
+
+test_avg.plot()
+train_avg.plot()
+
+weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
+weather['year'] = pd.DatetimeIndex(weather['date']).year
+weather['month'] = pd.DatetimeIndex(weather['date']).month
+weather['hour'] = pd.DatetimeIndex(weather['date']).hour
+
+
 
 pm_train = pm_train_c.copy()
 weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 weather['date'] = pd.to_datetime(weather['date'])
 pm_train = pm_train.merge(weather,on='date',how='left')
+
+
+
+id_station = 10
+id_type    = 1
+sdate   = '2016-10-01'
+edate   = '2017-10-31'
+
+short = pm_train[pm_train['station']==stations[id_station]]
+short = short[short['type']==types[id_type]]
+short = short[short['day']>=sdate]
+short = short[short['day']<=edate]
+
+short['temperature'] = short['temperature']*10
+short['apparentTemperature'] = short['apparentTemperature']*10+500
+short['windSpeed'] = short['windSpeed']*100+200
+short.set_index('date')[['aqi','y_test']].plot()
+short[['date','aqi','y_test','temperature','apparentTemperature','dewPoint','humidity']]
+#short[['error','temperature']].plot()
+
+
+
+
+studySet = pm_train[pm_train['error']<-300]
+
+#studySet['windSpeed'].hist(bins=100) equal or below 2 (like usual)
+pm_train['windSpeed'].hist(bins=100) 
+#studySet['humidity'].hist(bins=100) 0.65-0.75 (like usual)
+plt.scatter(studySet['windSpeed'],studySet['humidity'])
+plt.scatter(pm_train['windSpeed'],pm_train['humidity'])
+
+studySet['temperature'].hist(bins=100) # below -15 mostly
+studySet['month'].hist(bins=100) # below -15 mostly
+studySet['hour'].hist(bins=100) # below -15 mostly
+plt.scatter(studySet['month'],studySet['hour'])
+
+
+a = pm_test[~pm_test['aqi'].isnull()]
+
+plt.figure()
+sns.boxplot(y='aqi', x='month', 
+                 data=a, 
+                 palette="colorblind",
+                 hue='station')
+
+
+
+pm_train['temperature'].hist(bins=100)
+
+
 
 wstart = 9
 wend   = 5
@@ -167,32 +229,14 @@ pm_train.loc[~((pm_train['month']>=wend+1)&(pm_train['month']<=wstart-1)),'winte
 pm_train_winter = pm_train[pm_train['winter']==0]    
 
 
-sns.boxplot(y='error', x='type', 
-                 data=pm_train_winter, 
+sns.boxplot(y='aqi', x='month', 
+                 data=pm_train, 
                  palette="colorblind",
-                 hue='hour')
+                 hue='station')
 
 
 plt.scatter(pm_train['aqi'],pm_train['error'])
 plt.hist(pm_train_winter['error'],bins=100)
-
-
-id_station = 0
-id_type    = 0
-sdate   = '2017-01-10'
-edate   = '2017-01-15'
-
-short = pm_train[pm_train['station']==stations[id_station]]
-short = short[short['type']==types[id_type]]
-short = short[short['day']>=sdate]
-short = short[short['day']<=edate]
-
-short['temperature'] = short['temperature']*10+500
-short['apparentTemperature'] = short['apparentTemperature']*10+500
-short['windSpeed'] = short['windSpeed']*100+200
-short.set_index('date')[['aqi','y_test']].plot()
-short[['date','aqi','y_test','temperature','apparentTemperature','dewPoint','humidity']]
-#short[['error','temperature']].plot()
 
 
 
@@ -257,13 +301,13 @@ sns.boxplot(y='aqi', x='month',
                  hue='year')
 
 plt.figure()
-sns.boxplot(y='temperature', x='month', 
-                 data=pm_above300, 
+sns.boxplot(y='windBearing', x='month', 
+                 data=weather, 
                  palette="colorblind",
                  hue='year')
 
-g = sns.FacetGrid(pm_above300, row="year", col="dayofweek", hue="type",margin_titles=True)
-g.map(sns.regplot, "hour", "aqi", color=".3", fit_reg=False, x_jitter=.1)
+g = sns.FacetGrid(weather, row="year", col="month",margin_titles=True)
+g.map(sns.regplot, "hour", "temperature", color=".3", fit_reg=False, x_jitter=.1)
 
 g = sns.FacetGrid(pm_train, row="year", col="month", hue="type",margin_titles=True)
 g.map(sns.regplot, "hour", "aqi", color=".3", fit_reg=False, x_jitter=.1)

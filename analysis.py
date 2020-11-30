@@ -13,8 +13,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-#s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
-s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
+s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
+#s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
 os.chdir(s_dir)
 
 
@@ -109,6 +109,7 @@ print("From available:")
 print(np.sqrt(mean_squared_error(test_valid,test_hat)))
 plt.scatter(test_valid, test_hat)
 
+
 # post-process
 pm_test['aqi_back'] = pm_test['aqi']
 pm_test['error']    = pm_test['y_test'] - pm_test['aqi']
@@ -119,13 +120,30 @@ assert submission['aqi'].isnull().sum() == 0
 submission.to_csv('submission.csv',index=False)
 
 
-print("from last submission:")
+print("from best submission:")
 sub667 = pd.read_csv('submission667.csv')
+print(np.sqrt(mean_squared_error(sub667['aqi'],pm_test['aqi'])))
+
+
+
+model = my_model
+for i in range(len(X_train.columns)):
+    print(X_train.columns[i],model.coef_[i])
+
+
+
 sub670 = pd.read_csv('submission6701.csv')
 best = best.rename(columns={'aqi': "aqi_best"})
 pm_test = pm_test.merge(best,on='ID',how = 'left')
 print(np.sqrt(mean_squared_error(submission['aqi'],best['aqi_best'])))
 
+
+
+from sklearn.cluster import KMeans
+
+pm_train = pm_train.merge(weather,on='date',how='left')
+
+y_pred = KMeans(n_clusters=3, random_state=1).fit_predict(X_train)
 
 
 largess
@@ -154,6 +172,14 @@ plt.scatter(sub667['aqi'],sub670['aqi'])
 # temperature variables could be in logs
 # a month can be divided into two parts: early, late
 
+# windSpeed of 0 in night hours
+# windBearing has a lot of missing data
+# windSpeed got somehow high in 2019 and 2020
+#weather[weather['windSpeed']<1].groupby(['year','month'])['windSpeed'].mean().plot()
+
+# weather - deviation from year average? 
+
+
 #https://towardsdatascience.com/recurrent-neural-networks-by-example-in-python-ffd204f99470
 #https://towardsdatascience.com/my-secret-sauce-to-be-in-top-2-of-a-kaggle-competition-57cff0677d3c
 
@@ -176,22 +202,27 @@ weather = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/weather.csv')
 weather['date'] = pd.to_datetime(weather['date'])
 pm_train = pm_train.merge(weather,on='date',how='left')
 
+above500 = pm_train[pm_train['aqi']>500]
 
 
-id_station = 10
-id_type    = 1
-sdate   = '2016-10-01'
-edate   = '2017-10-31'
+id_station = 1
+id_type    = 0
+sdate   = '2017-01-27'
+edate   = '2017-02-05'
 
 short = pm_train[pm_train['station']==stations[id_station]]
 short = short[short['type']==types[id_type]]
 short = short[short['day']>=sdate]
 short = short[short['day']<=edate]
 
-short['temperature'] = short['temperature']*10
-short['apparentTemperature'] = short['apparentTemperature']*10+500
+short['temperature'] = short['temperature']*10+250
+short['apparentTemperature'] = short['apparentTemperature']*10+250
 short['windSpeed'] = short['windSpeed']*100+200
-short.set_index('date')[['aqi','y_test']].plot()
+short.set_index('date')[['aqi','y_test','apparentTemperature']].plot()
+short.set_index('date')[['aqi','y_test','temperature']].plot()
+short.set_index('date')[['aqi','y_test','windSpeed']].plot()
+short.set_index('date')[['aqi','y_test','windBearing']].plot()
+short.set_index('date')[['temperature','apparentTemperature']].plot()
 short[['date','aqi','y_test','temperature','apparentTemperature','dewPoint','humidity']]
 #short[['error','temperature']].plot()
 
@@ -215,10 +246,10 @@ plt.scatter(studySet['month'],studySet['hour'])
 a = pm_test[~pm_test['aqi'].isnull()]
 
 plt.figure()
-sns.boxplot(y='diff', x='month', 
-                 data=pm_test, 
+sns.boxplot(y='windSpeed', x='month', 
+                 data=weather, 
                  palette="colorblind",
-                 hue='hour')
+                 hue='year')
 
 
 

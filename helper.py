@@ -3,10 +3,10 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 def process_data(df, df_weather,worktype,temp_var,if_log=True):
-    winterStart = 10;11
-    winterEnd   = 3;2
+    winterStart = 11;11
+    winterEnd   = 2;2
 
-    summerStart = 6
+    summerStart = 5;6
     summerEnd   = 9
     
     deepWinterStart = 12
@@ -29,43 +29,67 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     df['summer']=0
     df.loc[((df['month']>=summerStart)&(df['month']<=summerEnd)),'summer'] = 1
     
-    
+   
     df = encoding(df)
     df = df.merge(df_weather,on='date',how='left')
-    
-    df['veryCold']=0
-    df.loc[df[temp_var]<-20,'veryCold'] = 1
-    df['veryColdTemp']  = df['veryCold']*df[temp_var]
-    df['veryColdWinter']  = df['veryCold']*df['winter']
-    df['veryColdWinter_1']  = df['veryCold']*df['winter']*df['hour_1']
-    df['veryColdWinter_2']  = df['veryCold']*df['winter']*df['hour_2']
-    df['veryColdWinter_3']  = df['veryCold']*df['winter']*df['hour_3']
-    df['veryColdWinter_4']  = df['veryCold']*df['winter']*df['hour_4']
-    df['veryColdWinter_10']  = df['veryCold']*df['winter']*df['hour_10']
-    df['veryColdWinter_11']  = df['veryCold']*df['winter']*df['hour_11']
-    df['veryColdWinter_12']  = df['veryCold']*df['winter']*df['hour_12']
-    df['veryColdWinter_13']  = df['veryCold']*df['winter']*df['hour_13']
-    df['veryColdWinter_14']  = df['veryCold']*df['winter']*df['hour_14']
-    df['veryColdWinter_20']  = df['veryCold']*df['winter']*df['hour_20']
-    df['veryColdWinter_21']  = df['veryCold']*df['winter']*df['hour_21']
-    df['veryColdWinter_22']  = df['veryCold']*df['winter']*df['hour_22']
-    df['veryColdWinter_23']  = df['veryCold']*df['winter']*df['hour_23']
-    df['veryColdWinter_24']  = df['veryCold']*df['winter']*df['hour_24']
 
-    df['usemWinter_1']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_1']
-    df['usemdWinter_2']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_2']
-    df['usemdWinter_3']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_3']
-    df['usemdWinter_4']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_4']
-    df['usemWinter_10']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_10']
-    df['usemWinter_11']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_11']
-    df['usemWinter_12']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_12']
-    df['usemWinter_13']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_13']
-    df['usemWinter_14']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_14']
-    df['usemWinter_20']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_20']
-    df['usemWinter_21']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_21']
-    df['usemWinter_22']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_22']
-    df['usemWinter_23']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_23']
-    df['usemWinter_24']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_24']
+#    df['tempQuad'] = df['winter']*df[temp_var]**2
+#    df['tempCub'] = df['winter']*df[temp_var]**3
+#    
+#    df['windSpeedQuad'] = df['winter']*df['windSpeed']**2
+#    df['windSpeedQuad'] = df['winter']*df['windSpeed']**2
+        
+    df['wshlWinter_1']  = df['wshl']*df['winter']*df['hour_1']
+    df['wshlWinter_2']  = df['wshl']*df['winter']*df['hour_2']
+    df['wshlWinter_3']  = df['wshl']*df['winter']*df['hour_3']
+    df['wshlWinter_4']  = df['wshl']*df['winter']*df['hour_4']
+    df['wshlWinter_5']  = df['wshl']*df['winter']*df['hour_5']
+    df['wshlWinter_10']  = df['wshl']*df['winter']*df['hour_10']
+    df['wshlWinter_11']  = df['wshl']*df['winter']*df['hour_11']
+    df['wshlWinter_12']  = df['wshl']*df['winter']*df['hour_12']
+    df['wshlWinter_13']  = df['wshl']*df['winter']*df['hour_13']
+    df['wshlWinter_14']  = df['wshl']*df['winter']*df['hour_14']
+    df['wshlWinter_20']  = df['wshl']*df['winter']*df['hour_20']
+    df['wshlWinter_21']  = df['wshl']*df['winter']*df['hour_21']
+    df['wshlWinter_22']  = df['wshl']*df['winter']*df['hour_22']
+    df['wshlWinter_23']  = df['wshl']*df['winter']*df['hour_23']
+    df['wshlWinter_24']  = df['wshl']*df['winter']*df['hour_24']
+    
+#    df['veryCold']=0
+#    df.loc[df[temp_var]<-20,'veryCold'] = 1
+    
+    
+#    df['veryColdTemp']  = df['veryCold']*df[temp_var]
+#    df['veryColdWinter']  = df['veryCold']*df['winter']
+#    df['veryColdWinter_1']  = df['veryCold']*df['winter']*df['hour_1']
+#    df['veryColdWinter_2']  = df['veryCold']*df['winter']*df['hour_2']
+#    df['veryColdWinter_3']  = df['veryCold']*df['winter']*df['hour_3']
+#    df['veryColdWinter_4']  = df['veryCold']*df['winter']*df['hour_4']
+#    df['veryColdWinter_10']  = df['veryCold']*df['winter']*df['hour_10']
+#    df['veryColdWinter_11']  = df['veryCold']*df['winter']*df['hour_11']
+#    df['veryColdWinter_12']  = df['veryCold']*df['winter']*df['hour_12']
+#    df['veryColdWinter_13']  = df['veryCold']*df['winter']*df['hour_13']
+#    df['veryColdWinter_14']  = df['veryCold']*df['winter']*df['hour_14']
+#    df['veryColdWinter_20']  = df['veryCold']*df['winter']*df['hour_20']
+#    df['veryColdWinter_21']  = df['veryCold']*df['winter']*df['hour_21']
+#    df['veryColdWinter_22']  = df['veryCold']*df['winter']*df['hour_22']
+#    df['veryColdWinter_23']  = df['veryCold']*df['winter']*df['hour_23']
+#    df['veryColdWinter_24']  = df['veryCold']*df['winter']*df['hour_24']
+#
+#    df['usemWinter_1']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_1']
+#    df['usemdWinter_2']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_2']
+#    df['usemdWinter_3']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_3']
+#    df['usemdWinter_4']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_4']
+#    df['usemWinter_10']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_10']
+#    df['usemWinter_11']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_11']
+#    df['usemWinter_12']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_12']
+#    df['usemWinter_13']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_13']
+#    df['usemWinter_14']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_14']
+#    df['usemWinter_20']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_20']
+#    df['usemWinter_21']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_21']
+#    df['usemWinter_22']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_22']
+#    df['usemWinter_23']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_23']
+#    df['usemWinter_24']  = df['stat_АНУ-ын Элчин сайдын яам']*df['winter']*df['hour_24']
 
         
     for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
@@ -100,11 +124,11 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
 #        df['deepWinter_h' + str(int(hour)) + 'windSpeed']  = df['deepWinter']*df['hour_' + str(int(hour))]*df['windSpeed']
             
    
-    lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']
+    lagvars = [temp_var,'windSpeed','humidity'] # 'windBearing',,'uvIndex','visibility'
     
     for var in lagvars:
         
-        for i in range(25):
+        for i in range(5):
             if i !=0:
                 df['winter' + var + '_' + str(i)] = df['winter']*df[var + '_' + str(i)]
 #                df['deepWinter' + var + '_' + str(i)] = df['deepWinter']*df[var + '_' + str(i)]
@@ -117,23 +141,25 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
                     df['summer' + var] = df['summer']*df[var]
             
             
-    df['winter_Sunday'] = df['winter']*df['dayofweek_0']
-    df['winter_Saturday'] = df['winter']*df['dayofweek_6']  
+#    df['winter_Sunday'] = df['winter']*df['dayofweek_0']
+#    df['winter_Saturday'] = df['winter']*df['dayofweek_6']  
 #    df['deepWinter_Sunday'] = df['deepWinter']*df['dayofweek_1']
 #    df['deepWinter_Saturday'] = df['deepWinter']*df['dayofweek_6']  
-
-    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
-    df['winter_dayuvIndex'] = df['winter']*df['dayuvIndex']
-    df['winter_daywindSpeed'] = df['winter']*df['daywindSpeed']
-    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
-    df['winter_daytemp'] = df['winter']*df['temp']
-    df['winter_daytemp_1'] = df['winter']*df['temp_1']
-    df['winter_daytemp_2'] = df['winter']*df['temp_2']
-#    df['winter_daytemp_7'] = df['winter']*df['temp_7']
+#
+#    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
+#    df['winter_dayuvIndex'] = df['winter']*df['dayuvIndex']
+#    df['winter_daywindSpeed'] = df['winter']*df['daywindSpeed']
+#    df['winter_dayHumidity'] = df['winter']*df['dayHumidity']
+#    df['winter_daytemp'] = df['winter']*df['temp']
+#    df['winter_daytemp_1'] = df['winter']*df['temp_1']
+#    
+#    
+#    df['winter_daytemp_2'] = df['winter']*df['temp_2']
+##    df['winter_daytemp_7'] = df['winter']*df['temp_7']
 #    df['winter_daytemp_diff_1'] = df['winter']*df['temp_diff_1']
 #    df['winter_daytemp_diff_2'] = df['winter']*df['temp_diff_2']
-#    df['winter_daytemp_diff_7'] = df['winter']*df['temp_diff_7']
-        
+##    df['winter_daytemp_diff_7'] = df['winter']*df['temp_diff_7']
+#        
 #    df['deepWinter_dayHumidity'] = df['deepWinter']*df['dayHumidity']
 #    df['deepWinter_dayuvIndex'] = df['deepWinter']*df['dayuvIndex']
 #    df['deepWinter_daywindSpeed'] = df['deepWinter']*df['daywindSpeed']
@@ -141,23 +167,23 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
 #    df['deepWinter_daytemp'] = df['deepWinter']*df['temp']
 #    df['deepWinter_daytemp_1'] = df['deepWinter']*df['temp_1']
 #    df['deepWinter_daytemp_2'] = df['deepWinter']*df['temp_2']
-#    df['deepWinter_daytemp_7'] = df['deepWinter']*df['temp_7']
+##    df['deepWinter_daytemp_7'] = df['deepWinter']*df['temp_7']
 #    df['deepWinter_daytemp_diff_1'] = df['deepWinter']*df['temp_diff_1']
 #    df['deepWinter_daytemp_diff_2'] = df['deepWinter']*df['temp_diff_2']
-#    df['deepWinter_daytemp_diff_7'] = df['deepWinter']*df['temp_diff_7']
-    
+##    df['deepWinter_daytemp_diff_7'] = df['deepWinter']*df['temp_diff_7']
+#    
 #    df['winter_temp_min'] = df['winter']*df['temp_min'] 
 #    df['winter_temp_min_1'] = df['winter']*df['temp_min_1'] 
 #    df['deepWinter_temp_min'] = df['deepWinter']*df['temp_min'] 
 #    df['deepWinter_temp_min_1'] = df['deepWinter']*df['temp_min_1'] 
-    
-    df['summer_dayHumidity'] = df['summer']*df['dayHumidity']
+#    
+#    df['summer_dayHumidity'] = df['summer']*df['dayHumidity']
     
     #pm_train = encoding(pm_train)
     df=df.interpolate()
     df=df.interpolate(method='backfill')
     
-    df.loc[df['aqi']<10,'aqi'] = 10 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
+    df.loc[df['aqi']<1,'aqi'] = 1 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
 #    df.loc[((df['aqi']>450)&(df['winter']!=1)),'aqi'] = 450
     df['l_aqi'] = np.log(df['aqi'])
     
@@ -169,17 +195,18 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
         Y = df.loc[:,'aqi']
     
     X = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
-    X = X.drop(['winter','summer','type'],axis=1)
+    X = X.drop(['winter','summer','type','month','station'],axis=1)
     
     
     return Y, X
 
 def encoding(df):
-    df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
+#    df = pd.get_dummies(df, columns=['month'], prefix='month', drop_first=True)
     df = pd.get_dummies(df, columns=['hour'], prefix='hour')
     df = df.rename(columns={'hour_0': "hour_24"})
-    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek')
-    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
+#    df = pd.get_dummies(df, columns=['dayofweek'], prefix='dayofweek')
+#    df = pd.get_dummies(df, columns=['station'], prefix='stat', drop_first=True)
+    df = df.drop('hour_6',axis=1)
 #    df = pd.get_dummies(df, columns=['type'], prefix='type', drop_first=True)
 #    df = pd.get_dummies(df, columns=['source'], prefix='source', drop_first=True)
     return df
@@ -191,17 +218,24 @@ def initial_process(df):
     df['year'] = pd.DatetimeIndex(df['date']).year
     df['month'] = pd.DatetimeIndex(df['date']).month
     df['hour'] = pd.DatetimeIndex(df['date']).hour
-    df['dayofweek'] = pd.DatetimeIndex(df['date']).dayofweek
+#    df['dayofweek'] = pd.DatetimeIndex(df['date']).dayofweek
     df['dayofmonth'] = pd.DatetimeIndex(df['date']).day
     return df
 
 def process_weather(weather,temp_var):
     weather['date'] = pd.to_datetime(weather['date'])
     weather['day'] = weather['date'].dt.strftime('%Y-%m-%d')
-#    weather['year'] = pd.DatetimeIndex(weather['date']).year
-#    weather['month'] = pd.DatetimeIndex(weather['date']).month
+    weather['year'] = pd.DatetimeIndex(weather['date']).year
+    weather['month'] = pd.DatetimeIndex(weather['date']).month
+    wavg = weather.groupby(['year','month'])['windSpeed'].mean().reset_index()
+    wavg = wavg.rename(columns={'windSpeed': "windSpeed_month_avg"})
+    weather = weather.merge(wavg,on=['year','month'],how='left')
+    weather['wshl'] = 0
+    weather.loc[((weather['windSpeed']<1)),'wshl'] = 1
+    weather['windSpeed'] = weather['windSpeed'] - weather["windSpeed_month_avg"]
+    
     weather = pd.get_dummies(weather, columns=['icon'], prefix='icon', drop_first=True)
-    weather = weather.drop(['Unnamed: 0', 'summary'],axis=1)
+    weather = weather.drop(['Unnamed: 0', 'summary','year','month','windSpeed_month_avg'],axis=1)
     weather = weather.interpolate()
     weather = weather.sort_values(by='date')
     
@@ -211,10 +245,10 @@ def process_weather(weather,temp_var):
     whelp['temp_2'] = weather.groupby(weather['day'])[temp_var].mean().shift(2)
 #    whelp['temp_7'] = weather.groupby(weather['day'])[temp_var].mean().shift(7)
     whelp['temp_diff_1'] = weather.groupby(weather['day'])[temp_var].mean().diff()
-#    whelp['temp_diff_2'] = weather.groupby(weather['day'])[temp_var].mean().diff(2)
+    whelp['temp_diff_2'] = weather.groupby(weather['day'])[temp_var].mean().diff(2)
 #    whelp['temp_diff_7'] = weather.groupby(weather['day'])[temp_var].mean().diff(7)
-#    whelp['temp_min'] = weather.groupby('day')['temperature'].min()
-#    whelp['temp_min_1'] = weather.groupby('day')['temperature'].min().shift()
+    whelp['temp_min'] = weather.groupby('day')['temperature'].min()
+    whelp['temp_min_1'] = weather.groupby('day')['temperature'].min().shift()
     whelp['dayHumidity'] = weather.groupby(weather['day'])['humidity'].mean()
     whelp['dayuvIndex'] = weather.groupby(weather['day'])['uvIndex'].mean()
     whelp['daywindSpeed'] = weather.groupby(weather['day'])['windSpeed'].mean()
@@ -232,11 +266,16 @@ def process_weather(weather,temp_var):
     else:
         weather = weather.drop(['apparentTemperature'],axis=1) 
     
-    lagvars = [temp_var,'windSpeed','windBearing','humidity','uvIndex','visibility']    
-    for i in range(1,25):
+    lagvars = [temp_var,'windSpeed','humidity']
+    for i in range(1,5):
         for var in lagvars:
             weather[var+'_'+str(i)] = weather[var].diff(i)
-            
+  
+#    leadvars = [temp_var,'windSpeed']    
+#    for i in range(1,3):
+#        for var in leadvars:
+#            weather[var+'_lead_'+str(i)] = weather[var].diff(-i)
+          
     return weather
 
 
@@ -251,7 +290,7 @@ def test_add_prep(df_test,df_train):
 def my_estimate(X,Y):
     model = LinearRegression()
     model.fit(X, Y)
-#    for i in range(len(X.columns)):
-#        print(X.columns[i],model.coef_[i])
+    for i in range(len(X.columns)):
+        print(X.columns[i],model.coef_[i])
     return model
     

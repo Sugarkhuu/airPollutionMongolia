@@ -3,8 +3,8 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 def process_data(df, df_weather,worktype,temp_var,if_log=True):
-    winterStart = 11
-    winterEnd   = 2
+    winterStart = 10;11
+    winterEnd   = 3;2
 
     summerStart = 6
     summerEnd   = 9
@@ -157,7 +157,7 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     df=df.interpolate()
     df=df.interpolate(method='backfill')
     
-    df.loc[df['aqi']<1,'aqi'] = 1 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
+    df.loc[df['aqi']<10,'aqi'] = 10 # <1 to 10 was 0.1 better in pm2.5 than <1 to 1, <10 to 10 is 0.05,0.4 better than previos
 #    df.loc[((df['aqi']>450)&(df['winter']!=1)),'aqi'] = 450
     df['l_aqi'] = np.log(df['aqi'])
     

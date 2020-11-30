@@ -13,8 +13,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
-#s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
+#s_dir = '/home/sugarkhuu/Documents/python/airPollutionMongolia'
+s_dir = "C:\\Users\\sugar\\Documents\\my\\py\\airPollutionMongolia"
 os.chdir(s_dir)
 
 
@@ -120,7 +120,8 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from last submission:")
-best = pd.read_csv('submission667.csv')
+sub667 = pd.read_csv('submission667.csv')
+sub670 = pd.read_csv('submission6701.csv')
 best = best.rename(columns={'aqi': "aqi_best"})
 pm_test = pm_test.merge(best,on='ID',how = 'left')
 print(np.sqrt(mean_squared_error(submission['aqi'],best['aqi_best'])))
@@ -135,10 +136,13 @@ old['aqi'].hist(bins=100)
 submission['aqi'].hist(bins=100)
 
 a=pd.DataFrame()
-a['old'] = old['aqi']
-a['sub'] = submission['aqi']
+a['667'] = sub667['aqi']
+a['670'] = sub670['aqi']
 
-a[['sub','old']].plot()
+a[['667','670']].plot()
+plt.scatter(a['last'],a['best'])
+plt.scatter(sub667['aqi'],sub670['aqi'])
+
 
 # IDEAS: try winter by sth else
 # minimum of last day
@@ -211,10 +215,10 @@ plt.scatter(studySet['month'],studySet['hour'])
 a = pm_test[~pm_test['aqi'].isnull()]
 
 plt.figure()
-sns.boxplot(y='aqi', x='month', 
-                 data=a, 
+sns.boxplot(y='diff', x='month', 
+                 data=pm_test, 
                  palette="colorblind",
-                 hue='station')
+                 hue='hour')
 
 
 

@@ -32,9 +32,9 @@ if_log = True
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
 
-temp_var = 'apparentTemperature'
+temp_var = 'apparentTemperature' # 64.1 in apparent was 64.3 in normal
 weather  = process_weather(weather,temp_var)
-
+pm_train = pm_train[pm_train['month'].isin(pm_test['month'].unique())]
 
 pm_train_c = pm_train.copy()
 
@@ -117,6 +117,13 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from best submission:")
-sub667 = pd.read_csv('submission667.csv')
-print(np.sqrt(mean_squared_error(sub667['aqi'],pm_test['aqi'])))
+sub641 = pd.read_csv('sub641.csv')
+print(np.sqrt(mean_squared_error(sub641['aqi'],pm_test['aqi'])))
 
+
+plt.scatter(sub641['aqi'],pm_test['aqi'])
+sub641['aqi'].plot()
+pm_test['aqi'].plot()
+
+sub641['aqi'].hist(bins=100)
+pm_test['aqi'].hist(bins=100)

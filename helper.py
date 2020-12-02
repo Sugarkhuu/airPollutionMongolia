@@ -31,24 +31,7 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     
    
     df = encoding(df)
-    df = df.merge(df_weather,on='date',how='left')
-        
-    df['wshlWinter_1']  = df['wshl']*df['winter']*df['hour_1']
-    df['wshlWinter_2']  = df['wshl']*df['winter']*df['hour_2']
-    df['wshlWinter_3']  = df['wshl']*df['winter']*df['hour_3']
-    df['wshlWinter_4']  = df['wshl']*df['winter']*df['hour_4']
-    df['wshlWinter_5']  = df['wshl']*df['winter']*df['hour_5']
-    df['wshlWinter_10']  = df['wshl']*df['winter']*df['hour_10']
-    df['wshlWinter_11']  = df['wshl']*df['winter']*df['hour_11']
-    df['wshlWinter_12']  = df['wshl']*df['winter']*df['hour_12']
-    df['wshlWinter_13']  = df['wshl']*df['winter']*df['hour_13']
-    df['wshlWinter_14']  = df['wshl']*df['winter']*df['hour_14']
-    df['wshlWinter_20']  = df['wshl']*df['winter']*df['hour_20']
-    df['wshlWinter_21']  = df['wshl']*df['winter']*df['hour_21']
-    df['wshlWinter_22']  = df['wshl']*df['winter']*df['hour_22']
-    df['wshlWinter_23']  = df['wshl']*df['winter']*df['hour_23']
-    df['wshlWinter_24']  = df['wshl']*df['winter']*df['hour_24']
-    
+    df = df.merge(df_weather,on='date',how='left')   
         
     for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
@@ -148,7 +131,7 @@ def process_weather(weather,temp_var):
     whelp['temp'] = weather.groupby(weather['day'])[temp_var].mean()
     whelp['temp_1'] = weather.groupby(weather['day'])[temp_var].mean().shift()
     whelp['temp_diff_1'] = weather.groupby(weather['day'])[temp_var].mean().diff()
-        whelp['temp_2'] = weather.groupby(weather['day'])[temp_var].mean().shift(2)
+    whelp['temp_2'] = weather.groupby(weather['day'])[temp_var].mean().shift(2)
     whelp['temp_diff_2'] = weather.groupby(weather['day'])[temp_var].mean().diff(2)
     whelp['temp_min'] = weather.groupby('day')['temperature'].min()
     whelp['temp_min_1'] = weather.groupby('day')['temperature'].min().shift()

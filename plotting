@@ -1,0 +1,45 @@
+
+
+bar_colors = ['#58A618','#B7C82E','#BDD39D',
+                 '#80A9BF','#356581','#394A58','#8B92A1','#DCDCE6',
+                 '#FF8400','#8B4513','#9370DB','#FF1493','#C800C8',
+                 '#D2691E','#FFD700','#DAA520','#CD5C5C','#8470FF']
+                 
+
+
+    
+    
+nvar = 10
+ntime = 10
+
+
+
+
+ax=plt.gca()
+bar = my_model.coef_[:nvar]*X_train.iloc[:ntime,:nvar]
+bar = my_model.coef_*X_train
+
+small_bar = bar.iloc[bar.sum(axis=1).idxmax()-5:bar.sum(axis=1).idxmax()+5,:]
+
+total = small_bar[:,:20]
+total.plot(ax=ax,kind='bar', rot=0, 
+    fontsize=5, stacked=True, color=bar_colors,
+    width = 0.5)
+    
+plt.show()
+
+
+np.exp((bar.sum(axis=1)+my_model.intercept_)).plot()
+
+
+type2 = pm_train_c[pm_train_c['type']==types[1]]
+type2 = type2.reset_index(drop=True)
+
+bar_c = bar.reset_index(drop=True)
+aa = bar_c[type2['station']==stations[0]]
+bb = type2[type2['station']==stations[0]]
+
+
+
+
+[pm_train_c['station']==stations[0]]

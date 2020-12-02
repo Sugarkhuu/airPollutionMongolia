@@ -117,13 +117,13 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from best submission:")
-sub641 = pd.read_csv('sub641.csv')
-print(np.sqrt(mean_squared_error(sub641['aqi'],pm_test['aqi'])))
+subB = pd.read_csv('sub632.csv')
+print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
 
 
-plt.scatter(sub641['aqi'],pm_test['aqi'])
-sub641['aqi'].plot()
+plt.scatter(subB['aqi'],pm_test['aqi'])
+subB['aqi'].plot()
 pm_test['aqi'].plot()
 
-sub641['aqi'].hist(bins=100)
+subB['aqi'].hist(bins=100)
 pm_test['aqi'].hist(bins=100)

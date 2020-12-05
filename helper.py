@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from catboost import CatBoostRegressor
+from xgboost import XGBRegressor
 
 def process_data(df, df_weather,worktype,temp_var,if_log=True):
     winterStart = 11;11
@@ -35,7 +37,9 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
         
     for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
-        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]        
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))] 
+        df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
+        df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
             if i != 0:
                 df['winter_hh_temp' + '_' + str(i) + '_' + str(hour)] = df['winter']*df['hour_' + str(int(hour))]*df[temp_var + '_' + str(i)]
@@ -46,6 +50,8 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     for hour in np.linspace(nightHStart,24,24-nightHStart+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
         df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]       
+        df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
+        df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
             if i != 0:
                 df['winter_hh_temp' + '_' + str(i) + '_' + str(hour)] = df['winter']*df['hour_' + str(int(hour))]*df[temp_var + '_' + str(i)]
@@ -54,6 +60,8 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     for hour in np.linspace(1,nightHEnd,nightHEnd-1+1):
         df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
         df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]    
+        df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
+        df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
             if i != 0:
                 df['winter_hh_temp' + '_' + str(i) + '_' + str(hour)] = df['winter']*df['hour_' + str(int(hour))]*df[temp_var + '_' + str(i)]
@@ -118,15 +126,33 @@ def process_weather(weather,temp_var):
     wavg = weather.groupby(['year','month'])['windSpeed'].mean().reset_index()
     wavg = wavg.rename(columns={'windSpeed': "windSpeed_month_avg"})
     weather = weather.merge(wavg,on=['year','month'],how='left')
+    
     weather['wshl'] = 0
-    weather.loc[((weather['windSpeed']<1)),'wshl'] = 1
+    weather.loc[((weather['windSpeed']<0.5)),'wshl'] = 1
+
+    weather['wshl2'] = 0
+    weather.loc[((weather['windSpeed']<0.5)&(weather['windSpeed'].shift()<0.5)),'wshl2'] = 1
+
+    # weather['wshl_cold'] = 0
+    # weather.loc[((weather['windSpeed']<0.5)&(weather[temp_var]<-15)),'wshl_cold'] = 1
+
+    # weather['wshl2_cold'] = 0
+    # weather.loc[((weather['windSpeed']<0.5)&(weather['windSpeed'].shift()<0.5)&(weather[temp_var]<-15)),'wshl2_cold'] = 1
+
+
     weather['windSpeed'] = weather['windSpeed'] - weather["windSpeed_month_avg"]
     
     weather = pd.get_dummies(weather, columns=['icon'], prefix='icon', drop_first=True)
     weather = weather.drop(['Unnamed: 0', 'summary','year','month','windSpeed_month_avg'],axis=1)
     weather = weather.interpolate()
     weather = weather.sort_values(by='date')
-    
+
+    # weather['temp_cub'] = weather[temp_var]**3
+
+    # weather['wshl_temp'] = weather['wshl']*weather[temp_var]
+    # weather['wshl_temp_cub'] = weather['wshl']*weather['temp_cub']
+    # weather['wshl_cold_temp_cub'] = weather['wshl_cold']*weather['temp_cub']
+
     whelp =pd.DataFrame()
     whelp['temp'] = weather.groupby(weather['day'])[temp_var].mean()
     whelp['temp_1'] = weather.groupby(weather['day'])[temp_var].mean().shift()
@@ -152,6 +178,9 @@ def process_weather(weather,temp_var):
     for i in range(1,5):
         for var in lagvars:
             weather[var+'_'+str(i)] = weather[var].diff(i)
+            weather[var+'_shift_'+str(i)] = weather[var].shift(i)
+
+    weather[temp_var + '_diff_1_cub'] = weather[temp_var + '_1']**3
 
     return weather
 
@@ -165,9 +194,21 @@ def test_add_prep(df_test,df_train):
     return df_test
 
 def my_estimate(X,Y):
-    model = LinearRegression()
+#    model = LinearRegression()
+#    model = CatBoostRegressor(iterations=1000,
+#                             learning_rate=0.01,
+#                             depth=7,
+#                             eval_metric='RMSE',
+#                             random_seed = 23,
+#                             bagging_temperature = 0.1,
+#                             od_type='Iter',
+#                             metric_period = 75,
+#                             od_wait=100)
+    model = XGBRegressor(max_depth=10,learning_rate=0.07,n_estimators=500
+                     ,sub_sample=0.6,gamma=1,colsample_bytree=0.5)
+
     model.fit(X, Y)
-    for i in range(len(X.columns)):
-        print(X.columns[i],model.coef_[i])
+    # for i in range(len(X.columns)):
+    #     print(X.columns[i],model.coef_[i])
     return model
     

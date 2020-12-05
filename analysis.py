@@ -117,7 +117,7 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from best submission:")
-subB = pd.read_csv('sub632.csv')
+subB = pd.read_csv('sub606.csv')
 print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
 
 
@@ -127,3 +127,24 @@ pm_test['aqi'].plot()
 
 subB['aqi'].hist(bins=100)
 pm_test['aqi'].hist(bins=100)
+
+
+
+cat_depth7 = pd.read_csv('submission_catdepth7.csv')
+lin_6317 = pd.read_csv('sub6317.csv')
+
+plt.scatter(cat_depth7['aqi'],lin_6317['aqi'])
+
+lin_6317['aqi'].plot()
+cat_depth7['aqi'].plot()
+
+avg = lin_6317.copy()
+avg['aqi'] = (lin_6317['aqi'] + cat_depth7['aqi'])/2
+avg.loc[30000:,'aqi'] = cat_depth7.loc[30000:,'aqi']
+
+
+plt.scatter(lin_6317['aqi'],avg['aqi'])
+
+lin_6317['aqi'].plot()
+submission['aqi'].plot()
+plt.title('<30000 is cat50:lin50, >30000 lin50')

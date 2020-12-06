@@ -32,6 +32,14 @@ if_log = True
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
 
+# replace NA in pm_train.aqi by station, month, hour average
+tmp = pm_train.groupby(['station','month','hour'])['aqi'].mean()
+tmp=tmp.reset_index()
+tmp = tmp.rename(columns={'aqi': "aqi_mean"})
+pm_train = pm_train.merge(tmp,on=['station','month','hour'],how='left')
+pm_train.loc[pm_train['aqi']==0,'aqi'] = pm_train.loc[pm_train['aqi']==0,'aqi_mean']
+del pm_train['aqi_mean']
+
 temp_var = 'apparentTemperature' # 64.1 in apparent was 64.3 in normal
 weather  = process_weather(weather,temp_var)
 pm_train = pm_train[pm_train['month'].isin(pm_test['month'].unique())]
@@ -117,8 +125,12 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from best submission:")
-subB = pd.read_csv('sub606.csv')
+subB = pd.read_csv('sub605.csv')
 print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
+
+print("from nan submission:")
+sub_nan = pd.read_csv('sub_linear.csv')
+print(np.sqrt(mean_squared_error(sub_nan['aqi'],pm_test['aqi'])))
 
 
 plt.scatter(subB['aqi'],pm_test['aqi'])
@@ -129,6 +141,12 @@ subB['aqi'].hist(bins=100)
 pm_test['aqi'].hist(bins=100)
 
 
+plt.scatter(sub_nan['aqi'],pm_test['aqi'])
+sub_nan['aqi'].plot()
+pm_test['aqi'].plot()
+
+subB['aqi'].hist(bins=100)
+pm_test['aqi'].hist(bins=100)
 
 cat_depth7 = pd.read_csv('submission_catdepth7.csv')
 lin_6317 = pd.read_csv('sub6317.csv')

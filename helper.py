@@ -195,17 +195,17 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
 #    model = LinearRegression()
-#    model = CatBoostRegressor(iterations=1000,
-#                             learning_rate=0.01,
-#                             depth=7,
-#                             eval_metric='RMSE',
-#                             random_seed = 23,
-#                             bagging_temperature = 0.1,
-#                             od_type='Iter',
-#                             metric_period = 75,
-#                             od_wait=100)
-    model = XGBRegressor(max_depth=10,learning_rate=0.07,n_estimators=500
-                     ,sub_sample=0.6,gamma=1,colsample_bytree=0.5)
+    model = CatBoostRegressor(iterations=1000,
+                             learning_rate=0.01,
+                             depth=7,
+                             eval_metric='RMSE',
+                             random_seed = 23,
+                             bagging_temperature = 0.1,
+                             od_type='Iter',
+                             metric_period = 75,
+                             od_wait=100)
+#    model = XGBRegressor(max_depth=10,learning_rate=0.07,n_estimators=500
+#                     ,sub_sample=0.6,gamma=1,colsample_bytree=0.5)
 
     model.fit(X, Y)
     # for i in range(len(X.columns)):

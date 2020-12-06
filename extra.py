@@ -108,7 +108,7 @@ test_best['aqi'].plot()
 test_xg['aqi'].plot()
 
 linAndCat = test_lin.copy()
-linAndCat['aqi'] = 0.6*test_lin['aqi'] + 0.4*test_cat['aqi']
+linAndCat['aqi'] = 0.5*test_lin['aqi'] + 0.5*test_xg['aqi']
 
 plt.scatter(test_best['aqi'],linAndCat['aqi'])
 

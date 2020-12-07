@@ -183,6 +183,8 @@ def process_weather(weather,temp_var):
             weather[var+'_shift_'+str(i)] = weather[var].shift(i)
 
     weather[temp_var + '_diff_1_cub'] = weather[temp_var + '_1']**3
+    weather[temp_var + '_diff_2_cub'] = weather[temp_var + '_2']**3
+    weather[temp_var + '_diff_3_cub'] = weather[temp_var + '_3']**3
 
     return weather
 
@@ -197,7 +199,7 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
     
-    run_model = 'cat';'lin';'xg'
+    run_model = 'lin';'cat';'xg'
     
     if run_model == 'lin':
         model = LinearRegression()
@@ -217,7 +219,7 @@ def my_estimate(X,Y):
         
     print('Running model: ', run_model)
     model.fit(X, Y)
-    # for i in range(len(X.columns)):
-    #     print(X.columns[i],model.coef_[i])
+#     for i in range(len(X.columns)):
+#         print(X.columns[i],model.coef_[i])
     return model
     

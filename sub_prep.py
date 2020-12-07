@@ -22,8 +22,8 @@ check['aqi_mean_diff'].hist(bins=100)
 
 
 
-corr_factor = .75
-corr_thres  =  25
+corr_factor = 0.5;.75
+corr_thres  =  50;25
 #my_sub.loc[check['aqi_mean_diff']<-100,'aqi'] = my_sub.loc[check['aqi_mean_diff']<-100,'aqi'] + 15
 my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] = my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] - corr_factor*check.loc[check['aqi_mean_diff']>corr_thres,'aqi_mean_diff']
 

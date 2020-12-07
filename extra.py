@@ -111,15 +111,16 @@ sample[['y_test']].plot()
 #ax.scatter3D(X, Y, Z)
 #plt.show()
 
-db = united
+db = pm_train_c
 x_var = 'month'
-type_var = 'station'
+y_var = 'error'
+type_var = 'station';'year';'type';'station'
 col_var = 'year'
 an_var = 'hour'
 var2c = 'aqi'
 
 plt.figure()
-sns.boxplot(y='aqi', x=x_var, 
+sns.boxplot(y=y_var, x=x_var, 
                  data=db, 
                  palette="colorblind",
                  hue=type_var)

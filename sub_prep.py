@@ -1,8 +1,10 @@
 lin_weight = 0.5
 cat_weight = 0.5
 
-linear = pd.read_csv('submission_linear.csv')
-cat    = pd.read_csv('submission_cat.csv')
+#linear = pd.read_csv('submission_linear.csv')
+#cat    = pd.read_csv('submission_cat.csv')
+linear = pd.read_csv('sub_linear.csv')
+cat    = pd.read_csv('sub_cat.csv')
 
 my_sub = linear.copy()
 my_sub['aqi'] = lin_weight*linear['aqi'] + cat_weight*cat['aqi']
@@ -39,7 +41,7 @@ submission.to_csv('submission.csv',index=False)
 
 ###############################################################################
 
-subB = pd.read_csv('sub602.csv')
+subB = pd.read_csv('sub601.csv')
 print(np.sqrt(mean_squared_error(subB['aqi'],my_sub['aqi'])))
 
 

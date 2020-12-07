@@ -97,7 +97,7 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
         Y = df.loc[:,'aqi']
     
     X = df.drop(['ID','year','date','latitude','longitude','aqi','l_aqi','dayofmonth','day','source'],axis=1)
-    X = X.drop(['winter','summer','type','month','station'],axis=1)
+    X = X.drop(['winter','summer','type','station'],axis=1)
     
     
     return Y, X
@@ -106,6 +106,8 @@ def encoding(df):
     df = pd.get_dummies(df, columns=['hour'], prefix='hour')
     df = df.rename(columns={'hour_0': "hour_24"})
     df = df.drop('hour_6',axis=1)
+    # df = pd.get_dummies(df, columns=['station'], prefix='station')
+    df = pd.get_dummies(df, columns=['month'], prefix='month')
     return df
 
 
@@ -195,7 +197,7 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
     
-    run_model = 'lin';'cat';'xg'
+    run_model = 'cat';'lin';'xg'
     
     if run_model == 'lin':
         model = LinearRegression()

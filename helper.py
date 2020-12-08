@@ -129,6 +129,8 @@ def process_weather(weather,temp_var):
     wavg = wavg.rename(columns={'windSpeed': "windSpeed_month_avg"})
     weather = weather.merge(wavg,on=['year','month'],how='left')
     
+    # weather.loc[weather['day']>='2019-03-21','visibility'] = weather.loc[weather['day']>='2019-03-21','visibility']/16.093*10.003
+
     weather['wshl'] = 0
     weather.loc[((weather['windSpeed']<0.5)),'wshl'] = 1
 
@@ -199,7 +201,7 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
     
-    run_model = 'lin';'cat';'xg'
+    run_model = 'xg';'lin';'cat';
     
     if run_model == 'lin':
         model = LinearRegression()

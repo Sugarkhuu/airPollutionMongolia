@@ -1,13 +1,16 @@
-lin_weight = 0.5
-cat_weight = 0.5
+lin_weight = 0.50
+cat_weight = 0.50
+xg_weight  = 0.00
 
 #linear = pd.read_csv('submission_linear.csv')
 #cat    = pd.read_csv('submission_cat.csv')
 linear = pd.read_csv('sub_linear.csv')
 cat    = pd.read_csv('sub_cat.csv')
+xg    = pd.read_csv('sub_xg.csv')
+
 
 my_sub = linear.copy()
-my_sub['aqi'] = lin_weight*linear['aqi'] + cat_weight*cat['aqi']
+my_sub['aqi'] = lin_weight*linear['aqi'] + cat_weight*cat['aqi'] + xg_weight*xg['aqi']
 
 
 tmp = pm_train.groupby(['station','month','hour'])['aqi'].mean()
@@ -25,7 +28,7 @@ check['aqi_mean_diff'].hist(bins=100)
 
 
 corr_factor = 0.5;.75
-corr_thres  =  50;25
+corr_thres  =  25;50;25
 #my_sub.loc[check['aqi_mean_diff']<-100,'aqi'] = my_sub.loc[check['aqi_mean_diff']<-100,'aqi'] + 15
 my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] = my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] - corr_factor*check.loc[check['aqi_mean_diff']>corr_thres,'aqi_mean_diff']
 
@@ -41,13 +44,18 @@ submission.to_csv('submission.csv',index=False)
 
 ###############################################################################
 
-subB = pd.read_csv('sub601.csv')
+subB = pd.read_csv('sub6002.csv')
 print(np.sqrt(mean_squared_error(subB['aqi'],my_sub['aqi'])))
 
 
 plt.scatter(subB['aqi'],my_sub['aqi'])
 subB['aqi'].plot()
+
+subB['aqi'].plot()
+
 my_sub['aqi'].plot()
+linear['aqi'].plot()
+cat['aqi'].plot()
 
 subB['aqi'].hist(bins=100)
 my_sub['aqi'].hist(bins=100)

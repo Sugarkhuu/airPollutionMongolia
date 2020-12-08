@@ -12,6 +12,8 @@ pd.set_option('display.width', 1000)
 #pm_train_c['y_test'].to_csv("catboost_train.csv",index=False)
 #pm_train_c['y_test'].to_csv("linear_train.csv",index=False)
 
+subB = pd.read_csv('sub601.csv')
+
 plt.scatter(subB['aqi'],pm_test['aqi'])
 subB['aqi'].plot()
 pm_test['aqi'].plot()

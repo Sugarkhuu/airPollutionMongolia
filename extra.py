@@ -115,8 +115,8 @@ sample[['y_test']].plot()
 
 db = pm_train_c
 x_var = 'month'
-y_var = 'error'
-type_var = 'station';'year';'type';'station'
+y_var = 'aqi'
+type_var = 'dayofweek';'hour';'station';'year';'type';'station'
 col_var = 'year'
 an_var = 'hour'
 var2c = 'aqi'

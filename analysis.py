@@ -121,11 +121,11 @@ pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull()
 
 submission = pm_test[['ID','aqi']].copy()
 assert submission['aqi'].isnull().sum() == 0
-submission.to_csv('submission.csv',index=False)
+submission.to_csv('submission_cat.csv',index=False)
 
 
 print("from best submission:")
-subB = pd.read_csv('sub605.csv')
+subB = pd.read_csv('sub6002.csv')
 print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
 
 print("from nan submission:")

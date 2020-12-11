@@ -1,5 +1,5 @@
-lin_weight = 0.60
-cat_weight = 0.40
+lin_weight = 0.50
+cat_weight = 0.50
 xg_weight  = 0.00
 
 linear = pd.read_csv('submission_linear.csv')
@@ -64,8 +64,8 @@ my_sub['aqi'].hist(bins=100)
 subB['aqi'].plot()
 pm_test['aqi_mean'].plot()
 
+subB['aqi'].plot()
+pm_test['aqi'].plot()
 
-
-
-
-
+subB['aqi'].hist(bins=100)
+pm_test['aqi'].hist(bins=100)

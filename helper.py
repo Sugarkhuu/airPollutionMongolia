@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression
 from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
 
-def process_data(df, df_weather,worktype,temp_var,if_log=True):
+def process_data(df, df_weather,worktype,workstation,temp_var,if_log=True):
     winterStart = 11;11
     winterEnd   = 2;2
 
@@ -35,8 +35,8 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     df = df.merge(df_weather,on='date',how='left')   
         
     for hour in np.linspace(dayHStart,dayHEnd,dayHEnd-dayHStart+1):
-        # df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
-        # df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))] 
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))] 
         df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
         df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
@@ -47,8 +47,8 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
 
 
     for hour in np.linspace(nightHStart,24,24-nightHStart+1):
-        # df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
-        # df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]       
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]       
         df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
         df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
@@ -57,8 +57,8 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
             else:
                 df['winter_hh_temp' + '_' + str(hour)] = df['winter']*df['hour_' + str(int(hour))]*df[temp_var]        
     for hour in np.linspace(1,nightHEnd,nightHEnd-1+1):
-        # df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
-        # df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]    
+        df['winter_h' + str(int(hour))]  = df['winter']*df['hour_' + str(int(hour))]
+        df['deepWinter_h' + str(int(hour))]  = df['deepWinter']*df['hour_' + str(int(hour))]    
         df['wshl_winter_h' + str(int(hour))]  = df['wshl']*df['winter']*df['hour_' + str(int(hour))]
         df['wshl2_winter_h' + str(int(hour))]  = df['wshl2']*df['winter']*df['hour_' + str(int(hour))]
         for i in range(5):
@@ -67,14 +67,14 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
             else:
                 df['winter_hh_temp' + '_' + str(hour)] = df['winter']*df['hour_' + str(int(hour))]*df[temp_var]
 
-    for mm in range(3):
-        for hh in range(24):
-            if hh != 5:
-                df['month_hour' + str(int(mm+1)) + str(int(hh+1))] = df['month_' + str(int(mm+1))]*df['hour_' + str(int(hh+1))]
-                df['month_hour' + str(int(mm+10)) + str(int(hh+1))] = df['month_' + str(int(mm+10))]*df['hour_' + str(int(hh+1))]
+    # for mm in range(3):
+    #     for hh in range(24):
+    #         if hh != 5:
+    #             df['month_hour' + str(int(mm+1)) + str(int(hh+1))] = df['month_' + str(int(mm+1))]*df['hour_' + str(int(hh+1))]
+    #             df['month_hour' + str(int(mm+10)) + str(int(hh+1))] = df['month_' + str(int(mm+10))]*df['hour_' + str(int(hh+1))]
    
-    for weekday in range(7):
-        df['winter_dayofweek_' + str(weekday)] = df['winter']*df['dayofweek_' + str(weekday)]
+    # for weekday in range(7):
+    #     df['winter_dayofweek_' + str(weekday)] = df['winter']*df['dayofweek_' + str(weekday)]
 
     lagvars = [temp_var,'windSpeed','humidity'] 
     
@@ -96,7 +96,7 @@ def process_data(df, df_weather,worktype,temp_var,if_log=True):
     df.loc[df['aqi']<1,'aqi'] = 1 
     df['l_aqi'] = np.log(df['aqi'])
     
-    df = df[df['type']==worktype]
+    df = df[(df['type']==worktype)&(df['station']==workstation)]
     
     if if_log:
         Y = df.loc[:,'l_aqi']
@@ -210,7 +210,7 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
     
-    run_model = 'cat';'lin';'xg';
+    run_model = 'lin';'cat';'xg';
     
     if run_model == 'lin':
         model = LinearRegression()

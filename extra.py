@@ -76,12 +76,12 @@ xg  = pd.read_csv('xgboost_train.csv')
 lin  = pd.read_csv('linear_train.csv')
 
 pm_train = pm_train_c.copy()
-pm_train['cat_hat'] = cat['y_test'].values
-pm_train['xg_hat'] = xg['y_test'].values
-pm_train['lin_hat'] = lin['y_test'].values
-pm_train['cat_err'] = pm_train['cat_hat'] - pm_train['aqi']
-pm_train['xg_err'] = pm_train['xg_hat'] - pm_train['aqi']
-pm_train['lin_err'] = pm_train['lin_hat'] - pm_train['aqi']
+#pm_train['cat_hat'] = cat['y_test'].values
+#pm_train['xg_hat'] = xg['y_test'].values
+#pm_train['lin_hat'] = lin['y_test'].values
+#pm_train['cat_err'] = pm_train['cat_hat'] - pm_train['aqi']
+#pm_train['xg_err'] = pm_train['xg_hat'] - pm_train['aqi']
+#pm_train['lin_err'] = pm_train['lin_hat'] - pm_train['aqi']
 
 pm_train = pm_train.merge(weather,on='date',how='left')
 #err200 = train[train['error']<-200]
@@ -89,12 +89,35 @@ pm_train = pm_train.merge(weather,on='date',how='left')
 months = [1,2,3];[10,11,12]
 #day = 25
 year = 2018
-station = 5
+station = 6
 ntype = 1
 
 sample = pm_train[((pm_train['month'].isin(months))&(pm_train['type']==types[ntype])&(pm_train['station']==stations[station])&(pm_train['year']==year))]
-sample[['aqi','lin_hat']].plot()
-sample[['windSpeed','apparentTemperature']].plot()
+sample[['aqi','y_test']].plot()
+print(np.sqrt(mean_squared_error(sample['aqi'],sample['y_test'])))
+
+
+
+my_summary = pd.DataFrame(columns = ['type','year','month','hour','station','score'])
+db = pm_train_c.copy()
+
+i=1
+for iType in db.type.unique().tolist():
+    for yy in db.year.unique().tolist():
+        for mm in db.month.unique().tolist():
+            for hh in db.hour.unique().tolist():
+                for stat in db.station.unique().tolist():
+                    sample = db[((db['type']==iType)&(db['year']==yy)&(db['month']==mm)&(db['hour']==hh)&(db['station']==stat))]
+                    if len(sample) != 0:
+                        score = np.sqrt(mean_squared_error(sample['aqi'],sample['y_test']))
+                        print(np.sqrt(mean_squared_error(sample['aqi'],sample['y_test'])))
+                        item = [iType,yy,mm,hh,stat,score]
+                        my_summary.loc[len(my_summary)] = item
+                        print(i)
+                        i+=1
+
+
+#sample[['windSpeed','apparentTemperature']].plot()
 sample[['y_test']].plot()
 
 #pm_test = pm_test.merge(weather,on='date',how='left')
@@ -115,8 +138,8 @@ sample[['y_test']].plot()
 
 db = pm_train_c
 x_var = 'month'
-y_var = 'aqi'
-type_var = 'dayofweek';'hour';'station';'year';'type';'station'
+y_var = 'error';'aqi'
+type_var = 'year';'dayofweek';'hour';'station';'year';'type';'station'
 col_var = 'year'
 an_var = 'hour'
 var2c = 'aqi'

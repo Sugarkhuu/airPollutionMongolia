@@ -32,79 +32,93 @@ if_log = True
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
 
-# replace NA in pm_train.aqi by station, month, hour average
-tmp = pm_train.groupby(['station','month','hour'])['aqi'].mean()
-tmp=tmp.reset_index()
-tmp = tmp.rename(columns={'aqi': "aqi_mean"})
-pm_train = pm_train.merge(tmp,on=['station','month','hour'],how='left')
-pm_train.loc[pm_train['aqi']==0,'aqi'] = pm_train.loc[pm_train['aqi']==0,'aqi_mean']
-del pm_train['aqi_mean']
-
 temp_var = 'apparentTemperature' # 64.1 in apparent was 64.3 in normal
 weather  = process_weather(weather,temp_var)
 pm_train = pm_train[pm_train['month'].isin(pm_test['month'].unique())]
 
 pm_train_c = pm_train.copy()
+my_summary = pd.DataFrame(columns = ['type','station','train','valid','total'])
 
 for worktype in types:
-    print("Starting type: ", worktype)
-    #estimation step
-    y_train, X_train = process_data(pm_train, weather,worktype,temp_var,if_log)
-    
-    X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
-    y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
-    X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
-    y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
+    for workstation in stations:
+        print("Starting type and station: ", worktype, ' ', workstation)
+        #estimation step
+        y_train, X_train = process_data(pm_train, weather,worktype,workstation,temp_var,if_log)
         
-    print("Estimation ------------------: ")
-    my_model = my_estimate(X_train_train,y_train_train)
-    
-    if if_log:
-        y_hat= np.exp(my_model.predict(X_train_train))
-    else:
-        y_hat= my_model.predict(X_train_train)
-    
-    #training set
-    print("On training set:")
-    if if_log:
-        print(np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat)))
-    else:
-        print(np.sqrt(mean_squared_error(y_train_train,y_hat)))
+        X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
+        y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
+        X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
+        y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
+            
+        print("Estimation ------------------: ")
+        try:        
+            my_model = my_estimate(X_train_train,y_train_train)
+            if if_log:
+                y_hat= np.exp(my_model.predict(X_train_train))
+            else:
+                y_hat= my_model.predict(X_train_train)
+        except:
+            print('No data in train')
+            continue
         
-    #validation set
-    print("On validation set:")
-    if if_log:
-        y_hat_valid= np.exp(my_model.predict(X_train_valid))
-        print(np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid)))
-    else: 
-        y_hat_valid= my_model.predict(X_train_valid)
-        print(np.sqrt(mean_squared_error(y_train_valid,y_hat_valid)))        
+        #training set
+        print("On training set:")
+        on_train = 0
+        if if_log:
+            print(np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat)))
+            on_train = np.sqrt(mean_squared_error(np.exp(y_train_train),y_hat))
+        else:
+            print(np.sqrt(mean_squared_error(y_train_train,y_hat)))
+            on_train = np.sqrt(mean_squared_error(y_train_train,y_hat))
+            
+        #validation set
+        print("On validation set:")
+        on_valid = 0
+        if if_log:
+            y_hat_valid= np.exp(my_model.predict(X_train_valid))
+            print(np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid)))
+            on_valid = np.sqrt(mean_squared_error(np.exp(y_train_valid),y_hat_valid))
+        else: 
+            y_hat_valid= my_model.predict(X_train_valid)
+            print(np.sqrt(mean_squared_error(y_train_valid,y_hat_valid)))       
+            on_valid = np.sqrt(mean_squared_error(y_train_valid,y_hat_valid))
+            
+        print("On total set:")
+        on_total = 0
+        my_model = my_estimate(X_train,y_train)
         
-    print("On total set:")
-    my_model = my_estimate(X_train,y_train)
-    
-    if if_log:
-        y_hat_tot= np.exp(my_model.predict(X_train))
-        print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
-    else:
-        y_hat_tot= my_model.predict(X_train)
-        print(np.sqrt(mean_squared_error(y_train,y_hat_tot)))
+        if if_log:
+            y_hat_tot= np.exp(my_model.predict(X_train))
+            print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
+            on_total = np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot))
+        else:
+            y_hat_tot= my_model.predict(X_train)
+            print(np.sqrt(mean_squared_error(y_train,y_hat_tot)))
+            on_total = np.sqrt(mean_squared_error(y_train,y_hat_tot))
 
-    pm_train_c.loc[pm_train_c['type']==worktype,'y_test'] = y_hat_tot
-    pm_train_c.loc[pm_train_c['type']==worktype,'error'] = y_hat_tot - pm_train_c.loc[pm_train_c['type']==worktype,'aqi']
+        pm_train_c.loc[((pm_train_c['type']==worktype)&(pm_train_c['station']==workstation)),'y_test'] = y_hat_tot
+        pm_train_c.loc[((pm_train_c['type']==worktype)&(pm_train_c['station']==workstation)),'error'] = y_hat_tot - pm_train_c.loc[((pm_train_c['type']==worktype)&(pm_train_c['station']==workstation)),'aqi']
+            
+        # prediction step
+        y_test, X_test = process_data(pm_test, weather,worktype,workstation,temp_var,if_log)
+        X_test         = test_add_prep(X_test,X_train)
         
-    # prediction step
-    y_test, X_test = process_data(pm_test, weather,worktype,temp_var,if_log)
-    X_test         = test_add_prep(X_test,X_train)
-    
-    if if_log:
-        y_test_hat = np.exp(my_model.predict(X_test))
-    else:
-        y_test_hat = my_model.predict(X_test)
+        try:
+            if if_log:
+                y_test_hat = np.exp(my_model.predict(X_test))
+            else:
+                y_test_hat = my_model.predict(X_test)
+        except:
+            print('No data in test')
+            continue
+            
+        pm_test.loc[((pm_test['type']==worktype)&(pm_test['station']==workstation)),'y_test'] = y_test_hat        
 
-    pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat        
+        item = [worktype,workstation,on_train,on_valid,on_total]
+        my_summary.loc[len(my_summary)] = item
 
 
+my_summary.to_csv('my_summary.csv',index=False)
 print('Processing done.')
 
 test_valid = pm_test.loc[~pm_test['aqi'].isnull(),'aqi'] 
@@ -131,6 +145,4 @@ print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
 print("from nan submission:")
 sub_nan = pd.read_csv('sub_linear.csv')
 print(np.sqrt(mean_squared_error(sub_nan['aqi'],pm_test['aqi'])))
-
-
 

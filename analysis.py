@@ -117,13 +117,39 @@ submission.to_csv('submission.csv',index=False)
 
 
 print("from best submission:")
-subB = pd.read_csv('sub632.csv')
-print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
+sub600 = pd.read_csv('sub6002.csv')
+sub631 = pd.read_csv('sub631.csv')
+print(np.sqrt(mean_squared_error(sub631['aqi'],pm_test['aqi'])))
+print(np.sqrt(mean_squared_error(sub600['aqi'],pm_test['aqi'])))
 
 
-plt.scatter(subB['aqi'],pm_test['aqi'])
-subB['aqi'].plot()
+plt.scatter(sub600['aqi'],pm_test['aqi'])
+sub600['aqi'].plot()
 pm_test['aqi'].plot()
 
-subB['aqi'].hist(bins=100)
+sub600['aqi'].hist(bins=100)
 pm_test['aqi'].hist(bins=100)
+
+plt.scatter(sub631['aqi'],pm_test['aqi'])
+sub631['aqi'].plot()
+pm_test['aqi'].plot()
+
+sub631['aqi'].hist(bins=100)
+pm_test['aqi'].hist(bins=100)
+
+
+sub631['aqi'].plot()
+sub600['aqi'].plot()
+
+sub631['aqi'].hist(bins=100)
+sub600['aqi'].hist(bins=100)
+
+
+
+plt.bar(range(len(my_model.feature_importances_)), my_model.feature_importances_)
+plt.show()
+
+
+from xgboost import plot_importance
+plot_importance(my_model)
+plt.show()

@@ -9,7 +9,7 @@ months = [1,2,3];[10,11,12]
 #day = 25;15;14
 year = 2018
 station = 3;9;8;11;8;1;6
-ntype = 0
+ntype = 1
 
 sample = pm_train[((pm_train['month'].isin(months))&(pm_train['type']==types[ntype])&(pm_train['station']==stations[station])&(pm_train['year']==year))]
 

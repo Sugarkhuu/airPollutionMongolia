@@ -172,7 +172,7 @@ def test_add_prep(df_test,df_train):
 
 def my_estimate(X,Y):
     
-    run_model = 'xg';'lin';'cat';
+    run_model = 'lin';'xg';'cat';
     
     if run_model == 'lin':
         model = LinearRegression()

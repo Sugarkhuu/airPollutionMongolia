@@ -143,13 +143,3 @@ sub600['aqi'].plot()
 
 sub631['aqi'].hist(bins=100)
 sub600['aqi'].hist(bins=100)
-
-
-
-plt.bar(range(len(my_model.feature_importances_)), my_model.feature_importances_)
-plt.show()
-
-
-from xgboost import plot_importance
-plot_importance(my_model)
-plt.show()

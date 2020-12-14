@@ -249,3 +249,50 @@ for i in range(len(X.columns)):
 
 
 
+err_linear = pd.read_csv("err_linear.csv")
+err_cat    = pd.read_csv("err_cat.csv")
+
+err_lin_v = err_linear[~err_linear['error'].isnull()].reset_index(drop=True)
+err_cat_v = err_cat[~err_cat['error'].isnull()].reset_index(drop=True)
+plt.figure()
+plt.plot(err_lin_v)
+plt.plot(err_cat_v)
+
+linear = pd.read_csv('sub_linear.csv')
+cat    = pd.read_csv('sub_cat.csv')
+
+plt.figure()
+linear['aqi'].plot()
+cat['aqi'].plot()
+
+pm_test = pd.read_csv('./ulaanbaatar-city-air-pollution-prediction/pm_test.csv')
+pm_test['aqi_linear'] = linear['aqi']
+pm_test['aqi_cat'] = cat['aqi']
+
+plt.figure()
+pm_test[~pm_test['aqi'].isnull()].reset_index(drop=True)['aqi'].plot()
+
+
+
+pm_test['err_lin'] = err_linear['error']
+pm_test['err_cat'] = err_cat['error']
+a = pm_test[~pm_test['aqi_back'].isnull()]
+
+b = (a.groupby(['date','hour'])['err_lin'].mean() + a.groupby(['date','hour'])['err_cat'].mean())/2
+b1 = b.iloc[:24]
+b2 = b.iloc[24:48]
+b1 = b1.reset_index()
+b2 = b2.reset_index()
+
+b1 = b1[['hour',0]]
+b1.columns = ['hour','shift']
+
+b2 = b2[['hour',0]]
+b2.columns = ['hour','shift']
+
+
+a.groupby(['date','hour'])['err_lin'].mean().plot()
+a.groupby(['date','hour'])['err_cat'].mean().plot()
+
+
+

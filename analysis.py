@@ -132,5 +132,3 @@ print("from nan submission:")
 sub_nan = pd.read_csv('sub_linear.csv')
 print(np.sqrt(mean_squared_error(sub_nan['aqi'],pm_test['aqi'])))
 
-
-

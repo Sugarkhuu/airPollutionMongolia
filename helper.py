@@ -199,10 +199,8 @@ def test_add_prep(df_test,df_train):
     df_test = df_test.interpolate()
     return df_test
 
-def my_estimate(X,Y):
-    
-    run_model = 'xg';'lin';'cat';
-    
+def my_estimate(run_model, X,Y):
+        
     if run_model == 'lin':
         model = LinearRegression()
     elif run_model == 'cat':        

@@ -199,9 +199,9 @@ def test_add_prep(df_test,df_train):
     df_test = df_test.interpolate()
     return df_test
 
-def my_estimate(X,Y):
+def my_estimate(run_model,X,Y,valid_data=None):
     
-    run_model = 'lin';'cat';'xg';
+    # run_model = 'xg';'lin';'cat';
     
     if run_model == 'lin':
         model = LinearRegression()
@@ -215,12 +215,15 @@ def my_estimate(X,Y):
                                  od_type='Iter',
                                  metric_period = 75,
                                  od_wait=100)
-    elif run_model == 'xg':        
+    elif run_model == 'xg' and valid_data != None:        
         model = XGBRegressor(max_depth=10,learning_rate=0.07,n_estimators=500
                          ,sub_sample=0.6,gamma=1,colsample_bytree=0.5)
         
     print('Running model: ', run_model)
-    model.fit(X, Y)
+    if run_model == 'xg' and valid_data != None:         
+        model.fit(X, Y,eval_set=valid_data)
+    else:
+        model.fit(X, Y)
 #     for i in range(len(X.columns)):
 #         print(X.columns[i],model.coef_[i])
     return model

@@ -100,6 +100,28 @@ pm_test['aqi_mean'].plot()
 
 
 
+subB = pd.read_csv('sub6002.csv')
+sub_xg_old = pd.read_csv('sub_xg.csv')
+sub_xg_new = pd.read_csv('submission.csv')
 
 
 
+
+sub_xg_old['aqi'].plot()
+sub_xg_new['aqi'].plot()
+
+sub_xg_old['aqi'].hist(bins=100)
+sub_xg_new['aqi'].hist(bins=100)
+
+subB['aqi'].plot()
+sub_xg_new['aqi'].plot()
+
+subB['aqi'].hist(bins=100)
+sub_xg_new['aqi'].hist(bins=100)
+
+submix = subB.copy()
+submix['aqi'] = (subB['aqi'] + sub_xg_new['aqi'])/2
+
+submission = submix[['ID','aqi']].copy()
+assert submission['aqi'].isnull().sum() == 0
+submission.to_csv('submission_mix.csv',index=False)

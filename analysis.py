@@ -28,6 +28,7 @@ stations = pm_train.station.unique()
 types    = pm_train.type.unique()
 worktype = types[0]
 if_log = True
+run_model = 'lin';'cat';'xg'
 
 pm_train = initial_process(pm_train)
 pm_test  = initial_process(pm_test)
@@ -51,13 +52,18 @@ for worktype in types:
     #estimation step
     y_train, X_train = process_data(pm_train, weather,worktype,temp_var,if_log)
     
-    X_train_train = X_train.iloc[:int(np.round(len(X_train)*2/3)),:]
-    y_train_train = y_train[:int(np.round(len(X_train)*2/3))]
-    X_train_valid = X_train.iloc[int(np.round(len(X_train)*2/3)):,:]
-    y_train_valid = y_train[int(np.round(len(X_train)*2/3)):]
+    X_train_train = X_train.iloc[:int(np.round(len(X_train)*4/5)),:]
+    y_train_train = y_train[:int(np.round(len(X_train)*4/5))]
+    X_train_valid = X_train.iloc[int(np.round(len(X_train)*4/5)):,:]
+    y_train_valid = y_train[int(np.round(len(X_train)*4/5)):]
         
     print("Estimation ------------------: ")
-    my_model = my_estimate(X_train_train,y_train_train)
+    y_test, X_test = process_data(pm_test, weather,worktype,temp_var,if_log)
+    X_test         = test_add_prep(X_test,X_train)
+    valid_data = [(X_train_valid, y_train_valid), (X_test, y_test)]
+    # my_model = my_estimate(X_train,y_train,valid_data)
+
+    my_model = my_estimate(run_model,X_train_train,y_train_train,valid_data)
     
     if if_log:
         y_hat= np.exp(my_model.predict(X_train_train))
@@ -81,8 +87,14 @@ for worktype in types:
         print(np.sqrt(mean_squared_error(y_train_valid,y_hat_valid)))        
         
     print("On total set:")
-    my_model = my_estimate(X_train,y_train)
-    
+    # prediction step
+    # y_test, X_test = process_data(pm_test, weather,worktype,temp_var,if_log)
+    # X_test         = test_add_prep(X_test,X_train)
+
+    if run_model != 'xg':
+        my_model = my_estimate(run_model,X_train,y_train,valid_data)
+        my_model_cat = my_estimate('cat',X_train,y_train,valid_data) # last hot fix
+
     if if_log:
         y_hat_tot= np.exp(my_model.predict(X_train))
         print(np.sqrt(mean_squared_error(np.exp(y_train),y_hat_tot)))
@@ -93,42 +105,57 @@ for worktype in types:
     pm_train_c.loc[pm_train_c['type']==worktype,'y_test'] = y_hat_tot
     pm_train_c.loc[pm_train_c['type']==worktype,'error'] = y_hat_tot - pm_train_c.loc[pm_train_c['type']==worktype,'aqi']
         
-    # prediction step
-    y_test, X_test = process_data(pm_test, weather,worktype,temp_var,if_log)
-    X_test         = test_add_prep(X_test,X_train)
+    # # prediction step
+    # y_test, X_test = process_data(pm_test, weather,worktype,temp_var,if_log)
+    # X_test         = test_add_prep(X_test,X_train)
     
     if if_log:
-        y_test_hat = np.exp(my_model.predict(X_test))
+        y_test_hat     = np.exp(my_model.predict(X_test))
+        y_test_hat_cat = np.exp(my_model_cat.predict(X_test)) # last hot fix
     else:
         y_test_hat = my_model.predict(X_test)
 
-    pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat        
+    pm_test.loc[pm_test['type']==worktype,'y_test'] = y_test_hat     
+    pm_test.loc[pm_test['type']==worktype,'y_test_cat'] = y_test_hat_cat        
 
 
 print('Processing done.')
 
-test_valid = pm_test.loc[~pm_test['aqi'].isnull(),'aqi'] 
-test_hat   = pm_test.loc[~pm_test['aqi'].isnull(),'y_test'] 
-print("From available:")
-print(np.sqrt(mean_squared_error(test_valid,test_hat)))
-plt.scatter(test_valid, test_hat)
+
+lin_weight = 0.50
+cat_weight = 0.50
+
+linear = pm_test[['ID','y_test']]
+cat    = pm_test[['ID','y_test_cat']]
+linear.columns = ['ID','aqi']
+cat.columns = ['ID','aqi']
+
+my_sub = linear.copy()
+my_sub['aqi'] = lin_weight*linear['aqi'] + cat_weight*cat['aqi']
 
 
-# post-process
-pm_test['aqi_back'] = pm_test['aqi']
-pm_test['error']    = pm_test['y_test'] - pm_test['aqi']
-pm_test.loc[pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[pm_test['aqi'].isnull(),'y_test'] 
+# Some manual adj based on the fact there was a structural change since late 2019
+tmp = pm_train.groupby(['station','month','hour'])['aqi'].mean()
+tmp=tmp.reset_index()
+tmp = tmp.rename(columns={'aqi': "aqi_mean"})
+pm_test = pm_test.merge(tmp,on=['station','month','hour'],how='left')
 
-submission = pm_test[['ID','aqi']].copy()
+check = my_sub.copy()
+check['aqi_mean_diff'] = my_sub['aqi'] - pm_test['aqi_mean']
+
+corr_factor = 0.5;.75
+corr_thres  =  25;50;25
+my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] = my_sub.loc[check['aqi_mean_diff']>corr_thres,'aqi'] - corr_factor*check.loc[check['aqi_mean_diff']>corr_thres,'aqi_mean_diff']
+
+# readjust for those already given
+my_sub.loc[~pm_test['aqi'].isnull(),'aqi'] = pm_test.loc[~pm_test['aqi'].isnull(),'aqi']
+
+
+submission = my_sub[['ID','aqi']].copy()
 assert submission['aqi'].isnull().sum() == 0
 submission.to_csv('submission.csv',index=False)
 
+sub6002 = pd.read_csv('sub6002.csv')
 
-print("from best submission:")
-subB = pd.read_csv('sub605.csv')
-print(np.sqrt(mean_squared_error(subB['aqi'],pm_test['aqi'])))
-
-print("from nan submission:")
-sub_nan = pd.read_csv('sub_linear.csv')
-print(np.sqrt(mean_squared_error(sub_nan['aqi'],pm_test['aqi'])))
-
+print('Expect 0 here:')
+print(np.sqrt(mean_squared_error(submission['aqi'],sub6002['aqi'])))
